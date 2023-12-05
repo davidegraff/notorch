@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mol_gnn"
+name = "molgnn"
 description = "Molecular GNN toolkit"
 version = "0.0.1"
 authors = [
