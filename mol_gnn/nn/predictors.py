@@ -8,9 +8,8 @@ from torch.nn import functional as F
 from mol_gnn.nn.ffn import MLP
 from mol_gnn.nn.loss import *
 from mol_gnn.nn.metrics import *
-from mol_gnn.nn.hparams import HasHParams
 from mol_gnn.conf import DEFAULT_MESSAGE_DIM
-from mol_gnn.utils import ClassRegistry
+from mol_gnn.utils import ClassRegistry, HasHParams
 
 __all__ = [
     "Predictor",
