@@ -26,8 +26,9 @@ class GraphEncoder(nn.Module):
         rev_index: Tensor | None,
         V_d: Tensor | None,
         batch: Tensor,
+        n: int,
     ) -> Tensor:
         H_v = self.conv(V, E, edge_index, rev_index, V_d)
-        H, _ = self.agg(H_v, batch, None, None)
+        H, _ = self.agg(H_v, batch, n)
 
         return H

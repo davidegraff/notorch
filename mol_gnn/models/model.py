@@ -123,7 +123,7 @@ class MPNN(pl.LightningModule):
         """the learned fingerprints for the input molecules"""
         V, E, edge_index, rev_index, batch = astuple(bmg)
 
-        H = self.encoder(V, E, edge_index, rev_index, V_d, batch)
+        H = self.encoder(V, E, edge_index, rev_index, V_d, batch, len(bmg))
         H = self.bn(H)
 
         return H if X_f is None else torch.cat((H, X_f), 1)

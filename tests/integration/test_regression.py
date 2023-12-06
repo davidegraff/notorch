@@ -11,7 +11,8 @@ import torch
 from torch.utils.data import DataLoader
 
 from mol_gnn import featurizers, models, nn
-from mol_gnn.nn.message_passing import edge, embed, message, update, agg
+from mol_gnn.nn import agg
+from mol_gnn.nn.message_passing import edge, embed, message, update
 from mol_gnn.data import MoleculeDatapoint, MoleculeDataset
 
 # warnings.simplefilter("ignore", category=UserWarning, append=True)

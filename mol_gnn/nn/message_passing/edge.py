@@ -1,7 +1,8 @@
 import torch
 from torch import Tensor, nn
 
-from mol_gnn.nn.message_passing.agg import Aggregation, DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
+from mol_gnn.nn.agg import Aggregation, DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
+from mol_gnn.nn.message_passing.agg import DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction
 from mol_gnn.nn.message_passing.base import MessagePassing
