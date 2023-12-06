@@ -3,15 +3,15 @@ from abc import abstractmethod
 import torch
 from torch import Tensor, nn
 
-from mol_gnn.conf import DEFAULT_ATOM_FDIM, DEFAULT_BOND_FDIM, DEFAULT_MESSAGE_DIM
+from mol_gnn.conf import DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM, DEFAULT_MESSAGE_DIM
 from mol_gnn.utils.registry import ClassRegistry
 
 
 class InputEmbedding(nn.Module):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         bias: bool = True
     ):
@@ -29,8 +29,8 @@ InputEmbeddingRegistry = ClassRegistry[InputEmbedding]()
 class BondMessageEmbedding(InputEmbedding):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         bias: bool = True
     ):
@@ -46,8 +46,8 @@ class BondMessageEmbedding(InputEmbedding):
 class AtomMessageEmbedding(InputEmbedding):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         bias: bool = True
     ):
@@ -65,8 +65,8 @@ class OutputEmbedding(nn.Module):
     @abstractmethod
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         *,
         bias: bool = False,
@@ -87,8 +87,8 @@ OutputEmbeddingRegistry = ClassRegistry[OutputEmbedding]()
 class LinearOutputEmbedding(nn.Module):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         *,
         bias: bool = False,
@@ -116,8 +116,8 @@ class LinearOutputEmbedding(nn.Module):
 class AtomDescriptorEmbedding(LinearOutputEmbedding):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_FDIM,
-        bond_dim: int = DEFAULT_BOND_FDIM,
+        atom_dim: int = DEFAULT_ATOM_DIM,
+        bond_dim: int = DEFAULT_BOND_DIM,
         message_dim: int = DEFAULT_MESSAGE_DIM,
         desc_dim: int = 0,
         *,
