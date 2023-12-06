@@ -1,38 +1,41 @@
-from typing import Protocol, Type, TypedDict
+from typing import Callable, Generic, Protocol, TypedDict, TypeVar, Self
+
+T = TypeVar("T")
 
 
-class HParamsDict(TypedDict):
-    """A dictionary containing a module's class and it's hyperparameters
+class HParamsDict(TypedDict, Generic[T]):
+    """A dictionary containing a object's constructor and keyword arguments
 
-    Using this type should essentially allow for initializing a module via::
+    Using this type allows for initializing an object via::
 
-        module = hparams.pop('cls')(**hparams)
+        obj = hparams.pop("from_hparams")(**hparams)
     """
 
-    cls: Type
+    from_hparams: Callable[..., T]
 
 
 class HasHParams(Protocol):
-    """:class:`HasHParams` is a protocol for clases which possess an :attr:`hparams` attribute which is a dictionary containing the object's class and arguments required to initialize it.
+    """:class:`HasHParams` is a protocol for clases which possess an :attr:`hparams` attribute of
+    type :class:`HParamsDict`.
 
-    That is, any object which implements :class:`HasHParams` should be able to be initialized via::
+    That is, any object which implements :class:`HasHParams` can be initialized via::
 
         class Foo(HasHParams):
             def __init__(self, *args, **kwargs):
                 ...
 
         foo1 = Foo(...)
-        foo1_cls = foo1.hparams['cls']
-        foo1_kwargs = {k: v for k, v in foo1.hparams.items() if k != "cls"}
-        foo2 = foo1_cls(**foo1_kwargs)
+        foo_from_hparams = foo1.hparams['from_hparams']
+        foo1_kwargs = {k: v for k, v in foo1.hparams.items() if k != "from_hparams"}
+        foo2 = foo_from_hparams(**foo1_kwargs)
         # code to compare foo1 and foo2 goes here and they should be equal
     """
 
-    hparams: HParamsDict
+    hparams: HParamsDict[Self]
 
 
 def from_hparams(hparams: HParamsDict):
-    cls = hparams["cls"]
-    kwargs = {k: v for k, v in hparams.items() if k != "cls"}
+    constructor = hparams["from_hparams"]
+    kwargs = {k: v for k, v in hparams.items() if k != "from_hparams"}
 
-    return cls(**kwargs)
+    return constructor(**kwargs)

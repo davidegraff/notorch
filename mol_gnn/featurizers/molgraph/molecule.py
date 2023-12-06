@@ -39,7 +39,7 @@ class MoleculeMolGraphFeaturizer(ABC):
 
 @dataclass
 class BaseMoleculeMolGraphFeaturizer(MoleculeMolGraphFeaturizer, _MolGraphFeaturizerMixin):
-    """A :class:`SimpleMoleculeMolGraphFeaturizer` is the base implementation of a
+    """A :class:`BaseMoleculeMolGraphFeaturizer` is the base implementation of a
     :class:`MoleculeMolGraphFeaturizer`"""
 
     def __call__(

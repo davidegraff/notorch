@@ -1,5 +1,5 @@
-from .agg import *
 from .loss import *
-from .message_passing import *
+from .message_passing import (
+    MessagePassing, MultiInputMessagePassing, Aggregation)
 from .predictors import *
 from .utils import Activation
