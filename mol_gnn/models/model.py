@@ -11,6 +11,7 @@ from mol_gnn.data import MpnnBatch, BatchMolGraph
 from mol_gnn.data import BatchMolGraph
 from mol_gnn.data.batch import MpnnBatch
 from mol_gnn.nn import MessagePassing, Aggregation, Predictor, LossFunction
+from mol_gnn.nn.encoder import GraphEncoder
 from mol_gnn.nn.metrics import Metric
 from mol_gnn.schedulers import NoamLR
 
@@ -61,8 +62,7 @@ class MPNN(pl.LightningModule):
 
     def __init__(
         self,
-        message_passing: MessagePassing,
-        agg: Aggregation,
+        encoder: GraphEncoder,
         predictor: Predictor,
         batch_norm: bool = True,
         metrics: Iterable[Metric] | None = None,
@@ -74,18 +74,17 @@ class MPNN(pl.LightningModule):
     ):
         super().__init__()
 
-        self.save_hyperparameters(ignore=["message_passing", "agg", "predictor"])
-        self.hparams.update(
-            {
-                "message_passing": message_passing.hparams,
-                "agg": agg.hparams,
-                "predictor": predictor.hparams,
-            }
-        )
+        self.save_hyperparameters(ignore=["encoder", "agg", "predictor"])
+        # self.hparams.update(
+        #     {
+        #         "message_passing": message_passing.hparams,
+        #         "agg": agg.hparams,
+        #         "predictor": predictor.hparams,
+        #     }
+        # )
 
-        self.message_passing = message_passing
-        self.agg = agg
-        self.bn = nn.BatchNorm1d(self.message_passing.output_dim) if batch_norm else nn.Identity()
+        self.encoder = encoder
+        self.bn = nn.BatchNorm1d(self.encoder.output_dim) if batch_norm else nn.Identity()
         self.predictor = predictor
 
         # NOTE(degraff): should think about how to handle no supplied metric
@@ -95,7 +94,7 @@ class MPNN(pl.LightningModule):
             else [self.predictor._default_metric, self.criterion]
         )
         w_t = torch.ones(self.n_tasks) if w_t is None else torch.tensor(w_t)
-        self.w_t = nn.Parameter(w_t.unsqueeze(0), False)
+        self.task_weights = nn.Parameter(w_t.unsqueeze(0), False)
 
         self.warmup_epochs = warmup_epochs
         self.init_lr = init_lr
@@ -124,8 +123,7 @@ class MPNN(pl.LightningModule):
         """the learned fingerprints for the input molecules"""
         V, E, edge_index, rev_index, batch = astuple(bmg)
 
-        H_v = self.message_passing(V, E, edge_index, rev_index, V_d)
-        H = self.agg(H_v, batch)
+        H = self.encoder(V, E, edge_index, rev_index, V_d, batch)
         H = self.bn(H)
 
         return H if X_f is None else torch.cat((H, X_f), 1)
@@ -150,7 +148,7 @@ class MPNN(pl.LightningModule):
 
         Z = self.fingerprint(bmg, V_d, X_f)
         preds = self.predictor.train_step(Z)
-        l = self.criterion(preds, targets, mask, w_s, self.w_t, lt_mask, gt_mask)
+        l = self.criterion(preds, targets, mask, w_s, self.task_weights, lt_mask, gt_mask)
 
         self.log("train/loss", l, prog_bar=True)
 

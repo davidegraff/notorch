@@ -28,6 +28,6 @@ class GraphEncoder(nn.Module):
         batch: Tensor,
     ) -> Tensor:
         H_v = self.conv(V, E, edge_index, rev_index, V_d)
-        H = self.agg.gather(H_v, batch)
+        H, _ = self.agg(H_v, batch, None, None)
 
         return H

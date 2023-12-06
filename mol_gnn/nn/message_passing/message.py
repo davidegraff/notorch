@@ -12,26 +12,20 @@ class MessageFunction(nn.Module):
 
         self.directed = directed
 
-    def forward(self, H: Tensor, V: Tensor, E: Tensor, rev_index: Tensor) -> Tensor:
-        """Calculate the message for each edge given its current hidden state"""
-        H = (H + H[rev_index]) / 2 if not self.directed else H
-
-        return self._forward(H, V, E)
-    
     @abstractmethod
-    def _forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
-        pass
-
+    def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
+        """Calculate the message for each edge given its current hidden state"""
+    
 MessageFunctionRegistry = ClassRegistry[MessageFunction]()
 
 
 @MessageFunctionRegistry.register("identity")
 class Identity(MessageFunction):
-    def _forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
+    def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
         return H
 
 
-@MessageFunctionRegistry.register("atom")
-class AtomMessages(MessageFunction):
-    def _forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
+@MessageFunctionRegistry.register("node")
+class NodeMessages(MessageFunction):
+    def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
         return torch.cat([H, E], dim=1)

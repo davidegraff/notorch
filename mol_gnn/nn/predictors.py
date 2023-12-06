@@ -8,7 +8,7 @@ from torch.nn import functional as F
 from mol_gnn.nn.ffn import MLP
 from mol_gnn.nn.loss import *
 from mol_gnn.nn.metrics import *
-from mol_gnn.conf import DEFAULT_MESSAGE_DIM
+from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.utils import ClassRegistry, HasHParams
 
 __all__ = [
@@ -63,7 +63,7 @@ class _FFNPredictorBase(Predictor, HyperparametersMixin):
     def __init__(
         self,
         n_tasks: int = 1,
-        input_dim: int = DEFAULT_MESSAGE_DIM,
+        input_dim: int = DEFAULT_HIDDEN_DIM,
         hidden_dim: int = 300,
         n_layers: int = 1,
         dropout: float = 0,
@@ -107,7 +107,7 @@ class RegressionFFN(_FFNPredictorBase):
     def __init__(
         self,
         n_tasks: int = 1,
-        input_dim: int = DEFAULT_MESSAGE_DIM,
+        input_dim: int = DEFAULT_HIDDEN_DIM,
         hidden_dim: int = 300,
         n_layers: int = 1,
         dropout: float = 0,
@@ -224,7 +224,7 @@ class MulticlassClassificationFFN(_FFNPredictorBase):
         self,
         n_classes: int,
         n_tasks: int = 1,
-        input_dim: int = DEFAULT_MESSAGE_DIM,
+        input_dim: int = DEFAULT_HIDDEN_DIM,
         hidden_dim: int = 300,
         n_layers: int = 1,
         dropout: float = 0,

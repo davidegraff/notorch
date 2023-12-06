@@ -1,62 +1,36 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 
 import torch
 from torch import Tensor, nn
 
-from mol_gnn.conf import DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM, DEFAULT_MESSAGE_DIM
+from mol_gnn.conf import (
+    DEFAULT_ATOM_DIM,
+    DEFAULT_ATOM_HIDDEN,
+    DEFAULT_BOND_DIM,
+    DEFAULT_BOND_HIDDEN,
+    DEFAULT_HIDDEN_DIM,
+)
 from mol_gnn.utils.registry import ClassRegistry
 
 
 class InputEmbedding(nn.Module):
-    def __init__(
-        self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
-        bias: bool = True
-    ):
+    def __init__(self, input_dim: int, output_dim: int, bias: bool = True):
         super().__init__()
 
-    @abstractmethod
-    def forward(self, V: Tensor, E: Tensor, edge_index: Tensor) -> Tensor:
-        pass
+        self.W = nn.Linear(input_dim, output_dim, bias)
 
+    def forward(self, X: Tensor):
+        return self.W(X)
 
-InputEmbeddingRegistry = ClassRegistry[InputEmbedding]()
+    @classmethod
+    def node(cls, bias: bool = True) -> InputEmbedding:
+        return cls(DEFAULT_ATOM_DIM, DEFAULT_HIDDEN_DIM, bias)
 
-
-@InputEmbeddingRegistry.register("bond")
-class BondMessageEmbedding(InputEmbedding):
-    def __init__(
-        self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
-        bias: bool = True
-    ):
-        super().__init__()
-
-        self.W_i = nn.Linear(atom_dim + bond_dim, message_dim, bias)
-
-    def forward(self, V: Tensor, E: Tensor, edge_index: Tensor):
-        return self.W_i(torch.cat([V[edge_index[0]], E], dim=1))
-
-
-@InputEmbeddingRegistry.register("atom")
-class AtomMessageEmbedding(InputEmbedding):
-    def __init__(
-        self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
-        bias: bool = True
-    ):
-        super().__init__()
-
-        self.W_i = nn.Linear(atom_dim, message_dim, bias)
-
-    def forward(self, V: Tensor, E: Tensor, edge_index: Tensor):
-        return self.W_i(V[edge_index[0]])
+    @classmethod
+    def edge(cls, bias: bool = True) -> InputEmbedding:
+        return cls(DEFAULT_ATOM_DIM + DEFAULT_BOND_DIM, DEFAULT_HIDDEN_DIM, bias)
 
 
 class OutputEmbedding(nn.Module):
@@ -67,16 +41,16 @@ class OutputEmbedding(nn.Module):
         self,
         atom_dim: int = DEFAULT_ATOM_DIM,
         bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
+        message_dim: int = DEFAULT_HIDDEN_DIM,
         *,
         bias: bool = False,
         dropout: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
         pass
 
     @abstractmethod
-    def forward(self, M: Tensor, V: Tensor, V_d: Tensor):
+    def forward(self,V: Tensor, M: Tensor, V_d: Tensor):
         pass
 
 
@@ -89,26 +63,24 @@ class LinearOutputEmbedding(nn.Module):
         self,
         atom_dim: int = DEFAULT_ATOM_DIM,
         bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
+        message_dim: int = DEFAULT_HIDDEN_DIM,
         *,
         bias: bool = False,
         dropout: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
 
         block = nn.Sequential(
-            nn.Linear(atom_dim + message_dim, message_dim, bias),
-            nn.ReLU(),
-            nn.Dropout(dropout),
+            nn.Linear(atom_dim + message_dim, message_dim, bias), nn.ReLU(), nn.Dropout(dropout)
         )
         self.blocks = nn.Sequential(block)
-    
+
     @property
     def output_dim(self) -> int:
         return self.blocks[-1][0].out_features
-    
-    def forward(self, M: Tensor, V: Tensor, V_d: Tensor):
+
+    def forward(self, V: Tensor, M: Tensor, V_d: Tensor):
         return self.blocks[0](torch.cat([V, M], dim=1))
 
 
@@ -118,28 +90,25 @@ class AtomDescriptorEmbedding(LinearOutputEmbedding):
         self,
         atom_dim: int = DEFAULT_ATOM_DIM,
         bond_dim: int = DEFAULT_BOND_DIM,
-        message_dim: int = DEFAULT_MESSAGE_DIM,
+        message_dim: int = DEFAULT_HIDDEN_DIM,
         desc_dim: int = 0,
         *,
         bias: bool = False,
         dropout: float = 0.0,
-        **kwargs
+        **kwargs,
     ):
-        super().__init__(
-            atom_dim, bond_dim, message_dim, bias=bias, dropout=dropout, **kwargs
-        )
+        super().__init__(atom_dim, bond_dim, message_dim, bias=bias, dropout=dropout, **kwargs)
 
         block = nn.Sequential(
-            nn.Linear(message_dim + desc_dim, message_dim + desc_dim, bias),
-            nn.Dropout(dropout)
+            nn.Linear(message_dim + desc_dim, message_dim + desc_dim, bias), nn.Dropout(dropout)
         )
         self.blocks.append(block)
-        
-    def forward(self, M: Tensor, V: Tensor, V_d: Tensor):
-        if V_d is None:
+
+    def forward(self, V: Tensor, M: Tensor, V_d: Tensor):        
+        try:
+            H = self.blocks[0](torch.cat([V, M], dim=1))
+            H = self.blocks[1](torch.cat([H, V_d], dim=1))
+        except RuntimeError:
             raise ValueError(f"arg 'V_d' must be supplied when using {self.__class__.__name__}.")
-        
-        H = self.blocks[0](torch.cat([V, M], dim=1))
-        H = self.blocks[1](torch.cat([H, V_d], dim=1))
 
         return H

@@ -11,7 +11,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from mol_gnn import featurizers, models, nn
-from mol_gnn.nn.message_passing import impl, embed, message, update, agg
+from mol_gnn.nn.message_passing import edge, embed, message, update, agg
 from mol_gnn.data import MoleculeDatapoint, MoleculeDataset
 
 # warnings.simplefilter("ignore", category=UserWarning, append=True)
@@ -24,21 +24,22 @@ def data(smis: list):
     return [MoleculeDatapoint.from_smi(smi, y) for smi, y in zip(smis, Y)]
 
 
-@pytest.fixture(params=[agg.Sum(), agg.GATv2()])
+@pytest.fixture(params=[agg.Sum(), agg.GatedAttention()])
 def aggr(request):
     return request.param
 
 
 @pytest.fixture#(params=[nn.BondMessagePassing(), nn.AtomMessagePassing()])
 def mp(aggr: agg.Aggregation):
-    return impl.ComposableMessagePassing(
-        embed.BondMessageEmbedding(),
+    return edge.EdgeMessagePassing(
+        embed.InputEmbedding.edge(),
         message.Identity(),
         aggr,
-        update.LinearUpdate(),
+        update.ResidualUpdate(),
         embed.LinearOutputEmbedding(),
         torch.nn.ReLU(),
-        3
+        3,
+        True
     )
     return request.param
 
@@ -52,10 +53,10 @@ def dataloader(data: list[MoleculeDatapoint]):
     return DataLoader(dset, 20, collate_fn=dset.collate_batch)
 
 
-def test_quick(mp: impl.ComposableMessagePassing, dataloader: DataLoader):
-    agg = nn.message_passing.agg.Mean()
-    ffn = nn.predictors.RegressionFFN()
-    mpnn = models.MPNN(mp, agg, ffn, True)
+def test_quick(mp: nn.MessagePassing, dataloader: DataLoader):
+    encoder = nn.GraphEncoder(mp, agg.Mean())
+    predictor = nn.RegressionFFN()
+    mpnn = models.MPNN(encoder, predictor, True)
 
     trainer = pl.Trainer(
         logger=False,
@@ -69,10 +70,10 @@ def test_quick(mp: impl.ComposableMessagePassing, dataloader: DataLoader):
     trainer.fit(mpnn, dataloader, None)
 
 
-def test_overfit(mp: impl.ComposableMessagePassing, dataloader: DataLoader):
-    agg = nn.MeanAggregation()
-    ffn = nn.RegressionFFN()
-    mpnn = models.MPNN(mp, agg, ffn, True)
+def test_overfit(mp: nn.MessagePassing, dataloader: DataLoader):
+    encoder = nn.GraphEncoder(mp, agg.Mean())
+    predictor = nn.RegressionFFN()
+    mpnn = models.MPNN(encoder, predictor, True)
 
     trainer = pl.Trainer(
         logger=False,

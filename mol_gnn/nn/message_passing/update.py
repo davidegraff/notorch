@@ -2,33 +2,36 @@ from abc import abstractmethod
 
 from torch import Tensor, nn
 
-from mol_gnn.conf import DEFAULT_MESSAGE_DIM
+from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.utils.registry import ClassRegistry
 
 
 class UpdateFunction(nn.Module):
     @abstractmethod
-    def forward(self, M: Tensor, H_0: Tensor):
+    def forward(self, H: Tensor, M: Tensor, H_0: Tensor):
         """Calculate the updated hidden state for each edge"""
 
 
 UpdateFunctionRegistry = ClassRegistry[UpdateFunction]()
 
 
-@UpdateFunctionRegistry.register("linear")
-class LinearUpdate(UpdateFunction):
+@UpdateFunctionRegistry.register("residual")
+class ResidualUpdate(UpdateFunction):
     def __init__(
-        self, message_dim: int = DEFAULT_MESSAGE_DIM, bias: bool = True, dropout: float = 0.0
-    ) -> None:
+        self,
+        hidden_dim: int = DEFAULT_HIDDEN_DIM,
+        bias: bool = True,
+        dropout: float = 0.0
+    ):
         super().__init__()
 
-        self.W_h = nn.Linear(message_dim, message_dim, bias)
-        self.tau = nn.ReLU()
+        self.W = nn.Linear(hidden_dim, hidden_dim, bias)
+        self.act = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, M: Tensor, H_0: Tensor):
-        H_t = self.W_h(M)
-        H_t = self.tau(H_0 + H_t)
-        H_t = self.dropout(H_t)
+    def forward(self, H: Tensor, M: Tensor, H_0: Tensor):
+        H = self.W(M)
+        H = self.act(H_0 + H)
+        H = self.dropout(H)
 
-        return H_t
+        return H
