@@ -1,6 +1,7 @@
 from torch import Tensor, nn
 
-from mol_gnn.nn.message_passing import MessagePassing, Aggregation
+from mol_gnn.nn.message_passing import MessagePassing
+from mol_gnn.nn import Aggregation
 
 GraphEncoderInput = tuple[
     Tensor, Tensor, Tensor, Tensor | None, Tensor | None, Tensor

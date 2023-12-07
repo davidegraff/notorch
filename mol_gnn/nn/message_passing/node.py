@@ -84,8 +84,8 @@ class NodeMessagePassing(MessagePassing):
         H = self.act(H_0)
         for _ in range(1, self.depth):
             M_e = self.message(V[src], E, H[src])
-            M = self.agg(M_e, edge_index, rev_index, dim_size)
+            M = self.agg(M_e, edge_index, dim_size, rev_index)
             H = self.update(H, M, H_0)
-        M = self.agg(H, dest, rev_index, dim_size)
+        M = self.agg(H, dest, dim_size, rev_index=rev_index)
 
         return self.out_embed(V, M, V_d)

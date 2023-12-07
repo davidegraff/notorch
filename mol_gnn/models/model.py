@@ -10,7 +10,7 @@ from torch import nn, Tensor, optim
 from mol_gnn.data import MpnnBatch, BatchMolGraph
 from mol_gnn.data import BatchMolGraph
 from mol_gnn.data.batch import MpnnBatch
-from mol_gnn.nn import MessagePassing, Aggregation, Predictor, LossFunction
+from mol_gnn.nn import Aggregation, MessagePassing, Predictor, LossFunction
 from mol_gnn.nn.encoder import GraphEncoder
 from mol_gnn.nn.metrics import Metric
 from mol_gnn.schedulers import NoamLR

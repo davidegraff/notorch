@@ -83,8 +83,8 @@ class EdgeMessagePassing(MessagePassing):
         H = self.act(H_0)
         for _ in range(1, self.depth):
             M = self.message(H, V[src], E)
-            M = self.edge_agg(M, edge_index, rev_index, dim_size)
+            M = self.edge_agg(M, edge_index, dim_size, rev_index)
             H = self.update(H, M, H_0)
-        H_v = self.node_agg(H, edge_index, rev_index, dim_size)
+        H_v = self.node_agg(H, edge_index, dim_size, rev_index=rev_index)
 
         return self.out_embed(H_v, V, V_d)
