@@ -32,10 +32,3 @@ class HasHParams(Protocol):
     """
 
     hparams: HParamsDict[Self]
-
-
-def from_hparams(hparams: HParamsDict):
-    constructor = hparams["from_hparams"]
-    kwargs = {k: v for k, v in hparams.items() if k != "from_hparams"}
-
-    return constructor(**kwargs)

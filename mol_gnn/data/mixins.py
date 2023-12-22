@@ -8,14 +8,15 @@ from sklearn.preprocessing import StandardScaler
 import torch
 from torch.utils.data import DataLoader
 
+from mol_gnn.types import Mol
 from mol_gnn.data.batch import BatchMolGraph, MpnnBatch
-from mol_gnn.featurizers.molecule import MoleculeFeaturizer
+from mol_gnn.featurizers.base import Featurizer
 from mol_gnn.featurizers.molgraph import MolGraph
 
 
 @dataclass(slots=True)
 class _DatapointMixin:
-    """A mixin class for both molecule- and reaction- and multicomponent-type data"""
+    """A mixin class for molecule-, reaction-, and multicomponent-type data"""
 
     y: np.ndarray | None = None
     """the target vector."""
@@ -28,10 +29,10 @@ class _DatapointMixin:
     x_f: np.ndarray | None = None
     """A vector of length ``d_f`` containing additional features (e.g., Morgan fingerprint) to
     concatenate to the global representation *after* aggregation"""
-    mfs: InitVar[list[MoleculeFeaturizer] | None] = None
+    mfs: InitVar[list[Featurizer[Mol]] | None] = None
     """A list of molecule featurizers to use"""
 
-    def __post_init__(self, mfs: list[MoleculeFeaturizer] | None):
+    def __post_init__(self, mfs: list[Featurizer[Mol]] | None):
         if self.x_f is not None and mfs is not None:
             raise ValueError("Cannot provide both loaded features and molecular featurizers!")
 

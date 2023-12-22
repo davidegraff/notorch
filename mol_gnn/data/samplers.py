@@ -6,7 +6,7 @@ from torch.utils.data import Sampler
 
 
 class SeededSampler(Sampler):
-    """A :class`SeededSampler` samples a dataset in a randomly seeded fashion"""
+    """A :class:`SeededSampler` samples a dataset in a randomly seeded fashion"""
 
     def __init__(self, N: int, seed: int):
         if seed is None:

@@ -1,25 +1,13 @@
-from abc import ABC, abstractmethod
-
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
+from mol_gnn.featurizers.base import Featurizer
 from mol_gnn.utils import ClassRegistry
+from mol_gnn.types import Mol
 
 
-class MoleculeFeaturizer(ABC):
-    """A :class:`MoleculeFeaturizer` calculates feature vectors of RDKit molecules."""
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """the length of the feature vector"""
-
-    @abstractmethod
-    def __call__(self, mol: Chem.Mol) -> np.ndarray:
-        """Featurize the molecule ``mol``"""
-
-
-MoleculeFeaturizerRegistry = ClassRegistry[MoleculeFeaturizer]()
+MoleculeFeaturizerRegistry = ClassRegistry[Featurizer[Mol]]()
 
 
 class MorganFeaturizerMixin:
@@ -47,10 +35,10 @@ class CountFeaturizerMixin:
 
 
 @MoleculeFeaturizerRegistry("morgan_binary")
-class MorganBinaryFeaturzer(MorganFeaturizerMixin, BinaryFeaturizerMixin, MoleculeFeaturizer):
+class MorganBinaryFeaturzer(MorganFeaturizerMixin, BinaryFeaturizerMixin, Featurizer[Mol]):
     pass
 
 
 @MoleculeFeaturizerRegistry("morgan_count")
-class MorganCountFeaturizer(MorganFeaturizerMixin, CountFeaturizerMixin, MoleculeFeaturizer):
+class MorganCountFeaturizer(MorganFeaturizerMixin, CountFeaturizerMixin, Featurizer[Mol]):
     pass

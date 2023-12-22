@@ -7,12 +7,13 @@ T = TypeVar("T")
 class ClassRegistry(dict[str, Type[T]]):
     def register(self, alias: Any | Iterable[Any] | None = None):
         def decorator(cls):
-            if alias is None:
-                keys = [cls.__name__.lower()]
-            elif isinstance(alias, str):
-                keys = [alias]
-            else:
-                keys = alias
+            match alias:
+                case None:
+                    keys = [cls.__name__.lower()]
+                case str():
+                    keys = [alias]
+                case _:
+                    keys = alias
 
             cls.alias = keys[0]
             for k in keys:
