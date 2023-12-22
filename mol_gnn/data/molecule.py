@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 from mol_gnn.data.mixins import _DatapointMixin, _MolGraphDatasetMixin, Datum
 from mol_gnn.featurizers.molecule import MoleculeFeaturizer
 from mol_gnn.featurizers.molgraph import MoleculeMolGraphFeaturizer, BaseMoleculeMolGraphFeaturizer
-from mol_gnn.utils.utils import make_mol
+from mol_gnn.utils.chem import make_mol
 
 
 @dataclass

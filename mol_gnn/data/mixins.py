@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from mol_gnn.types import Mol
-from mol_gnn.data.batch import BatchMolGraph, MpnnBatch
+from mol_gnn.data.batch import BatchedMolGraph, MpnnBatch
 from mol_gnn.featurizers.base import Featurizer
 from mol_gnn.featurizers.molgraph import MolGraph
 
@@ -76,7 +76,7 @@ class _MolGraphDatasetMixin:
         mgs, V_ds, x_fs, ys, weights, lt_masks, gt_masks = zip(*batch)
 
         return (
-            BatchMolGraph(mgs),
+            BatchedMolGraph(mgs),
             None if V_ds[0] is None else torch.from_numpy(np.concatenate(V_ds, axis=0)).float(),
             None if x_fs[0] is None else torch.from_numpy(np.array(x_fs)).float(),
             None if ys[0] is None else torch.from_numpy(np.array(ys)).float(),

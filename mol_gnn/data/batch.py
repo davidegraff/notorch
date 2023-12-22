@@ -10,8 +10,8 @@ from mol_gnn.featurizers import MolGraph
 
 
 @dataclass(repr=False, eq=False)
-class BatchMolGraph:
-    """A :class:`BatchMolGraph` represents a batch of individual :class:`MolGraph`s.
+class BatchedMolGraph:
+    """A :class:`BatchedMolGraph` represents a batch of individual :class:`MolGraph`s.
 
     It has all the attributes of a :class:`MolGraph` with the addition of the :attr:`batch`
     attribute. This class is intended for use with data loading, so it uses :obj:`~torch.Tensor`s
@@ -69,7 +69,7 @@ class BatchMolGraph:
 
 
 class MpnnBatch(NamedTuple):
-    bmg: BatchMolGraph
+    bmg: BatchedMolGraph
     V_d: Tensor | None
     X_f: Tensor | None
     Y: Tensor | None
@@ -79,7 +79,7 @@ class MpnnBatch(NamedTuple):
 
 
 class MultiInputMpnnBatch(NamedTuple):
-    bmgs: list[BatchMolGraph]
+    bmgs: list[BatchedMolGraph]
     V_ds: list[Tensor]
     X_f: Tensor | None
     Y: Tensor | None

@@ -10,7 +10,7 @@ from mol_gnn.featurizers.molecule import MoleculeFeaturizer
 
 from mol_gnn.featurizers.molgraph import RxnMolGraphFeaturizer, CGRFeaturizer
 from mol_gnn.data.mixins import _DatapointMixin
-from mol_gnn.utils.utils import make_mol
+from mol_gnn.utils.chem import make_mol
 
 
 @dataclass
