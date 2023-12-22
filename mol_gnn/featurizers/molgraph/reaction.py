@@ -1,10 +1,11 @@
-from abc import ABC, abstractmethod
 from dataclasses import InitVar, dataclass
 from enum import auto
 from typing import Iterable, Sequence
 import warnings
 
 import numpy as np
+from mol_gnn.featurizers.molgraph.base import MolGraphFeaturizer
+from mol_gnn.types import Rxn
 from rdkit import Chem
 from rdkit.Chem.rdchem import Bond, Mol
 
@@ -35,41 +36,10 @@ class RxnMode(EnumMapping):
     products and balances imbalanced reactions"""
 
 
-class RxnMolGraphFeaturizer(ABC):
-    """A :class:`RxnMolGraphFeaturizerProto` featurizes reactions (i.e., a 2-tuple of reactant
-    and product molecules) into :class:`MolGraph`s"""
-
-    @abstractmethod
-    def __call__(
-        self,
-        rxn: tuple[Chem.Mol, Chem.Mol],
-        atom_features_extra: np.ndarray | None = None,
-        bond_features_extra: np.ndarray | None = None,
-    ) -> MolGraph:
-        """Featurize the input reaction into a molecular graph
-
-        Parameters
-        ----------
-        rxn : tuple[Chem.Mol, Chem.Mol]
-            a 2-tuple of atom-mapped rdkit molecules, where the 0th element is the reactant and the
-            1st element is the product
-        atom_features_extra : np.ndarray | None, default=None
-            *UNSUPPORTED* maintained only to maintain parity with the method signature of the
-            `MoleculeFeaturizer`
-        bond_features_extra : np.ndarray | None, default=None
-            *UNSUPPORTED* maintained only to maintain parity with the method signature of the
-            `MoleculeFeaturizer`
-
-        Returns
-        -------
-        MolGraph
-            the molecular graph of the reaction
-        """
-
-
 @dataclass
-class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, RxnMolGraphFeaturizer):
-    """A :class:`CondensedGraphOfReactionFeaturizer` featurizes reactions using the condensed reaction graph method utilized in [1]_
+class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeaturizer[Rxn]):
+    """A :class:`CondensedGraphOfReactionFeaturizer` featurizes reactions using the condensed
+    reaction graph method utilized in [1]_
 
     **NOTE**: This class *does not* accept a :class:`AtomFeaturizerProto` instance. This is because
     it requries the :meth:`num_only()` method, which is only implemented in the concrete
@@ -110,18 +80,7 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, RxnMolGraphFe
     def mode(self, m: str | RxnMode):
         self.__mode = RxnMode.get(m)
 
-    def __call__(
-        self,
-        rxn: tuple[Chem.Mol, Chem.Mol],
-        atom_features_extra: np.ndarray | None = None,
-        bond_features_extra: np.ndarray | None = None,
-    ) -> MolGraph:
-        if atom_features_extra is not None:
-            warnings.warn("'atom_features_extra' is currently unsupported for reactions")
-        if bond_features_extra is not None:
-            warnings.warn("'bond_features_extra' is currently unsupported for reactions")
-
-        # import pdb; pdb.set_trace()
+    def __call__(self, rxn: Rxn) -> MolGraph:
         reac, pdt = rxn
         r2p_idx_map, pdt_idxs, reac_idxs = self.map_reac_to_prod(reac, pdt)
 
@@ -141,8 +100,8 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, RxnMolGraphFe
                 if b_reac is None and b_prod is None:
                     continue
 
-                x_e = self._calc_edge_feature(b_reac, b_prod)
-                E.extend([x_e, x_e])
+                e = self._calc_edge_feature(b_reac, b_prod)
+                E.extend([e, e])
                 edge_index[0].extend([u, v])
                 edge_index[1].extend([v, u])
 
@@ -232,7 +191,8 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, RxnMolGraphFe
         u: int,
         v: int,
     ) -> tuple[Bond, Bond]:
-        """get the corresponding reactant- and product-side bond, respectively, betweeen atoms `u` and `v`"""
+        """get the corresponding reactant- and product-side bond, respectively, betweeen atoms
+        :attr:`u` and :attr:`v`"""
         if u >= n_atoms_r and v >= n_atoms_r:
             b_prod = pdt.GetBondBetweenAtoms(pids[u - n_atoms_r], pids[v - n_atoms_r])
 
@@ -297,11 +257,11 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, RxnMolGraphFe
 
         Returns
         -------
-        ri2pi : dict[int, int]
+        dict[int, int]
             A dictionary of corresponding atom indices from reactant atoms to product atoms
-        pdt_idxs : list[int]
-            atom indices of poduct atoms
-        rct_idxs : list[int]
+        list[int]
+            atom indices of product atoms
+        list[int]
             atom indices of reactant atoms
         """
         pdt_idxs = []

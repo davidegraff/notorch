@@ -3,23 +3,14 @@ from dataclasses import InitVar, dataclass, field
 from typing import Sequence
 
 import numpy as np
-from rdkit.Chem.rdchem import Atom, HybridizationType
+from rdkit.Chem.rdchem import HybridizationType
 
-
-class AtomFeaturizer(ABC):
-    """An :class:`AtomFeaturizerProto` calculates feature vectors of RDKit atoms."""
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """the length of an atomic feature vector"""
-
-    @abstractmethod
-    def __call__(self, a: Atom) -> np.ndarray:
-        """featurize the atom ``a``"""
+from mol_gnn.featurizers.base import Featurizer
+from mol_gnn.types import Atom
 
 
 @dataclass(repr=False, eq=False, slots=True)
-class MultiHotAtomFeaturizer(AtomFeaturizer):
+class MultiHotAtomFeaturizer(Featurizer[Atom]):
     """An :class:`AtomFeaturizer` featurizes atoms based on the following attributes:
 
     * atomic number

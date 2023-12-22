@@ -1,23 +1,13 @@
-from abc import ABC, abstractmethod
 from typing import Sequence
 
 import numpy as np
-from rdkit.Chem.rdchem import Bond, BondType
+from rdkit.Chem.rdchem import BondType
+
+from mol_gnn.featurizers.base import Featurizer
+from mol_gnn.types import Bond
 
 
-class BondFeaturizer(ABC):
-    """A :class:`BondFeaturizerProto` calculates feature vectors of RDKit bonds"""
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """the length of a bond feature vector"""
-
-    @abstractmethod
-    def __call__(self, b: Bond) -> np.ndarray:
-        """featurize the bond ``b``"""
-
-
-class MultiHotBondFeaturizer(BondFeaturizer):
+class MultiHotBondFeaturizer(Featurizer[Bond]):
     """A :class:`BondFeaturizer` feauturizes bonds based on the following attributes:
 
     * ``null``-ity (i.e., is the bond ``None``?)
@@ -54,7 +44,8 @@ class MultiHotBondFeaturizer(BondFeaturizer):
 
     References
     ----------
-    .. [1] https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.BondStereo.values
+    .. [1]
+    https://www.rdkit.org/docs/source/rdkit.Chem.rdchem.html#rdkit.Chem.rdchem.BondStereo.values
     """
 
     def __init__(
