@@ -2,7 +2,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
-from mol_gnn.featurizers.base import VectorFeaturizer
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
 from mol_gnn.utils import ClassRegistry
 from mol_gnn.types import Mol
 

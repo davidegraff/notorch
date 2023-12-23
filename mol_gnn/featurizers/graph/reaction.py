@@ -9,7 +9,7 @@ from mol_gnn.types import Rxn
 from rdkit import Chem
 from rdkit.Chem.rdchem import Bond, Mol
 
-from mol_gnn.featurizers.graph.molgraph import Graph
+from mol_gnn.featurizers.graph.graph import Graph
 from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
 from mol_gnn.utils.utils import EnumMapping
 
@@ -37,7 +37,7 @@ class RxnMode(EnumMapping):
 
 
 @dataclass
-class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Rxn]):
+class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Rxn]):
     """A :class:`CondensedGraphOfReactionFeaturizer` featurizes reactions using the condensed
     reaction graph method utilized in [1]_
 
@@ -297,4 +297,4 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturiz
         return r2p_idx_map, pdt_idxs, rct_idxs
 
 
-CGRFeaturizer = CondensedGraphOfReactionFeaturizer
+CGRFeaturizer = CondensedReactionGraphFeaturizer

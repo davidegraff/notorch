@@ -4,12 +4,12 @@ import numpy as np
 
 
 class Graph(NamedTuple):
-    """A :class:`MolGraph` represents the graph featurization of a molecule."""
+    """A :class:`Graph` represents the feature representation of graph."""
 
     V: np.ndarray
-    """an array of shape ``V x d_v`` containing the atom features of the molecule"""
+    """an array of shape ``V x d_v`` containing the vertex features of the graph"""
     E: np.ndarray
-    """an array of shape ``E x d_e`` containing the bond features of the molecule"""
+    """an array of shape ``E x d_e`` containing the edge features of the graph"""
     edge_index: np.ndarray
     """an array of shape ``2 x E`` containing the edges of the graph in COO format"""
     rev_index: np.ndarray

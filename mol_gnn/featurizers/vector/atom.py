@@ -4,7 +4,7 @@ from typing import Sequence
 import numpy as np
 from rdkit.Chem.rdchem import HybridizationType
 
-from mol_gnn.featurizers.base import VectorFeaturizer
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
 from mol_gnn.types import Atom
 
 
