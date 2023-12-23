@@ -5,19 +5,19 @@ import numpy as np
 from typing import Self
 
 from rdkit import Chem
-from mol_gnn.data.molecule import Datum, _MolGraphDatasetMixin
-from mol_gnn.featurizers.molecule import MoleculeFeaturizer
 
-from mol_gnn.featurizers.molgraph import RxnMolGraphFeaturizer, CGRFeaturizer
+from mol_gnn.types import Mol, Rxn
+from mol_gnn.data.molecule import Datum, _MolGraphDatasetMixin
+from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, CGRFeaturizer
 from mol_gnn.data.mixins import _DatapointMixin
 from mol_gnn.utils.chem import make_mol
 
 
 @dataclass
 class _ReactionDatapointMixin:
-    rct: Chem.Mol
+    rct: Mol
     """the reactant associated with this datapoint"""
-    pdt: Chem.Mol
+    pdt: Mol
     """the product associated with this datapoint"""
 
     @classmethod
@@ -50,7 +50,7 @@ class _ReactionDatapointMixin:
 class ReactionDatapoint(_DatapointMixin, _ReactionDatapointMixin):
     """A :class:`ReactionDatapoint` contains a single reaction and its associated features and targets."""
 
-    def __post_init__(self, mfs: list[MoleculeFeaturizer] | None):
+    def __post_init__(self, mfs: list[VectorFeaturizer[Mol]] | None):
         if self.rct is None:
             raise ValueError("Reactant cannot be `None`!")
         if self.pdt is None:
@@ -58,7 +58,7 @@ class ReactionDatapoint(_DatapointMixin, _ReactionDatapointMixin):
 
         return super().__post_init__(mfs)
 
-    def calc_features(self, mfs: list[MoleculeFeaturizer]) -> np.ndarray:
+    def calc_features(self, mfs: list[VectorFeaturizer[Mol]]) -> np.ndarray:
         x_fs = [
             mf(mol) if mol.GetNumHeavyAtoms() > 0 else np.zeros(len(mf))
             for mf in mfs
@@ -74,7 +74,7 @@ class ReactionDataset(_MolGraphDatasetMixin):
 
     data: list[ReactionDatapoint]
     """the input data"""
-    featurizer: RxnMolGraphFeaturizer = field(default_factory=CGRFeaturizer)
+    featurizer: GraphFeaturizer[Rxn] = field(default_factory=CGRFeaturizer)
     """the featurizer with which to generate MolGraphs of the input"""
 
     def __getitem__(self, idx: int) -> Datum:

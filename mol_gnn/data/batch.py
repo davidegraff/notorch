@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from mol_gnn.featurizers import MolGraph
+from mol_gnn.featurizers import Graph
 
 
 @dataclass(repr=False, eq=False)
@@ -18,7 +18,7 @@ class BatchedMolGraph:
     to store data
     """
 
-    mgs: InitVar[Iterable[MolGraph]]
+    mgs: InitVar[Iterable[Graph]]
     """A list of individual :class:`MolGraph`s to be batched together"""
     V: Tensor = field(init=False)
     """the atom feature matrix"""
@@ -32,7 +32,7 @@ class BatchedMolGraph:
     batch: Tensor = field(init=False)
     """the index of the parent :class:`MolGraph` in the batched graph"""
 
-    def __post_init__(self, mgs: Iterable[MolGraph]):
+    def __post_init__(self, mgs: Iterable[Graph]):
         Vs = []
         Es = []
         edge_indexes = []

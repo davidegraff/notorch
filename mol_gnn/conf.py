@@ -1,5 +1,5 @@
 """Global configuration variables for mol_gnn"""
-from mol_gnn.featurizers.molgraph.molecule import BaseMoleculeMolGraphFeaturizer
+from mol_gnn.featurizers.graph.molecule import BaseMoleculeMolGraphFeaturizer
 
 
 DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM = BaseMoleculeMolGraphFeaturizer().shape
