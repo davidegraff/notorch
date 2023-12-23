@@ -1,22 +1,21 @@
 from abc import abstractmethod
-from collections.abc import Callable
 from typing import Generic, TypeVar
 
-from mol_gnn.featurizers.molgraph.molgraph import MolGraph
+from mol_gnn.featurizers.graph.molgraph import Graph
 
 T = TypeVar("T")
 
 
-class MolGraphFeaturizer(Callable, Generic[T]):
+class GraphFeaturizer(Generic[T]):
     """A :class:`MolGraphFeaturizer` featurizes inputs into :class:`MolGraph`s"""
 
     @abstractmethod
-    def __call__(self, x: T) -> MolGraph:
+    def __call__(self, x: T) -> Graph:
         """Featurize the input :attr:`x` into a :class:`MolGraph`
 
         Parameters
         ----------
-        mol : Chem.Mol
+        mol : ≠Chem.Mol
             the input molecule
         atom_features_extra : np.ndarray | None, default=None
             Additional features to concatenate to the calculated atom features

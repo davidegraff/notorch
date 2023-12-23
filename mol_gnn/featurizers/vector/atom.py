@@ -4,12 +4,12 @@ from typing import Sequence
 import numpy as np
 from rdkit.Chem.rdchem import HybridizationType
 
-from mol_gnn.featurizers.base import Featurizer
+from mol_gnn.featurizers.base import VectorFeaturizer
 from mol_gnn.types import Atom
 
 
 @dataclass(repr=False, eq=False, slots=True)
-class MultiHotAtomFeaturizer(Featurizer[Atom]):
+class MultiHotAtomFeaturizer(VectorFeaturizer[Atom]):
     """An :class:`AtomFeaturizer` featurizes atoms based on the following attributes:
 
     * atomic number

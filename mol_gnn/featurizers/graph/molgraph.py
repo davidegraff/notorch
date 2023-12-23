@@ -3,7 +3,7 @@ from typing import NamedTuple
 import numpy as np
 
 
-class MolGraph(NamedTuple):
+class Graph(NamedTuple):
     """A :class:`MolGraph` represents the graph featurization of a molecule."""
 
     V: np.ndarray

@@ -1,19 +1,18 @@
 from abc import abstractmethod
-from collections.abc import Callable
 from typing import Generic, TypeVar
 
-import numpy as np
+from numpy.typing import NDArray
 
 T = TypeVar("T")
 
 
-class Featurizer(Callable, Generic[T]):
-    """A :class:`Featurizer` calculates feature vectors of RDKit molecules."""
+class VectorFeaturizer(Generic[T]):
+    """A :class:`VectorFeaturizer` calculates feature vectors of inputs."""
 
     @abstractmethod
     def __len__(self) -> int:
         """the length of the feature vector"""
 
     @abstractmethod
-    def __call__(self, x: T) -> np.ndarray:
+    def __call__(self, x: T) -> NDArray:
         """Featurize the input :attr:`x`"""
