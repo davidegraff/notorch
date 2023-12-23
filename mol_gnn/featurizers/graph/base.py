@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Generic, TypeVar
 
-from mol_gnn.featurizers.graph.molgraph import Graph
+from mol_gnn.featurizers.graph.graph import Graph
 
 T = TypeVar("T")
 
