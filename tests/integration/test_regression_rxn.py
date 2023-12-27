@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 
 from mol_gnn import featurizers, models, nn
 from mol_gnn.data import ReactionDatapoint, ReactionDataset, collate_batch
-from mol_gnn.featurizers import CondensedGraphOfReactionFeaturizer
+from mol_gnn.featurizers import CondensedReactionGraphFeaturizer
 
 # warnings.simplefilter("ignore", category=UserWarning, append=True)
 warnings.filterwarnings("ignore", module=r"lightning.*", append=True)
@@ -34,7 +34,7 @@ def data(request):
 
 @pytest.fixture
 def dims():
-    return CondensedGraphOfReactionFeaturizer().shape
+    return CondensedReactionGraphFeaturizer().shape
 
 
 @pytest.fixture(params=[nn.BondMessagePassing, nn.AtomMessagePassing])
@@ -46,7 +46,7 @@ def mp(request, dims):
 
 @pytest.fixture
 def dataloader(data):
-    featurizer = featurizers.CondensedGraphOfReactionFeaturizer()
+    featurizer = featurizers.CondensedReactionGraphFeaturizer()
     dset = ReactionDataset(data, featurizer)
     dset.normalize_targets()
 

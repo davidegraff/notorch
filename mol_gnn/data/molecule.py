@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 from mol_gnn.types import Mol
 from mol_gnn.data.mixins import _DatapointMixin, _MolGraphDatasetMixin, Datum
-from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, SimpleMoleculeMolGraphFeaturizer
+from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, MolGraphFeaturizer
 from mol_gnn.utils.chem import make_mol
 
 
@@ -79,7 +79,7 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
     """
 
     data: list[MoleculeDatapoint]
-    featurizer: GraphFeaturizer[Mol] = field(default_factory=SimpleMoleculeMolGraphFeaturizer)
+    featurizer: GraphFeaturizer[Mol] = field(default_factory=MolGraphFeaturizer)
 
     def __getitem__(self, idx: int) -> Datum:
         d = self.data[idx]

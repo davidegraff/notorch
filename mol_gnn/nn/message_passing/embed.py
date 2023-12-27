@@ -7,9 +7,7 @@ from torch import Tensor, nn
 
 from mol_gnn.conf import (
     DEFAULT_ATOM_DIM,
-    DEFAULT_ATOM_HIDDEN,
     DEFAULT_BOND_DIM,
-    DEFAULT_BOND_HIDDEN,
     DEFAULT_HIDDEN_DIM,
 )
 from mol_gnn.utils.registry import ClassRegistry

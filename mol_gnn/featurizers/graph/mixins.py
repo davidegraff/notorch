@@ -6,7 +6,7 @@ from mol_gnn.featurizers.vector.atom import MultiHotAtomFeaturizer
 from mol_gnn.featurizers.vector.bond import MultiHotBondFeaturizer
 
 
-@dataclass
+@dataclass(repr=False, eq=False)
 class _MolGraphFeaturizerMixin:
     atom_featurizer: VectorFeaturizer[Atom] = field(default_factory=MultiHotAtomFeaturizer)
     bond_featurizer: VectorFeaturizer[Bond] = field(default_factory=MultiHotBondFeaturizer)
