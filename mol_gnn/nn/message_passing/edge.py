@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor, nn
 
-from mol_gnn.nn.agg import Aggregation, DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
+from mol_gnn.nn.agg import Aggregation
 from mol_gnn.nn.message_passing.agg import DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction
@@ -83,7 +83,7 @@ class EdgeMessagePassing(MessagePassing):
         H = self.act(H_0)
         for _ in range(1, self.depth):
             M = self.message(H, V[src], E)
-            M = self.edge_agg(M, edge_index, dim_size, rev_index)
+            M = self.edge_agg(M, edge_index, dim_size, rev_index=rev_index)
             H = self.update(H, M, H_0)
         H_v = self.node_agg(H, edge_index, dim_size, rev_index=rev_index)
 

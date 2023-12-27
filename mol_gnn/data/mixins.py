@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader
 
 from mol_gnn.types import Mol
 from mol_gnn.data.batch import BatchedMolGraph, MpnnBatch
-from mol_gnn.featurizers.base import VectorFeaturizer
-from mol_gnn.featurizers.graph import Graph
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
+from mol_gnn.featurizers.graph.graph import Graph
 
 
 @dataclass(slots=True)
