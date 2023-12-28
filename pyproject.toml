@@ -26,6 +26,7 @@ keywords = [
 requires-python = ">=3.11"
 dependencies = [
     "lightning >= 2.0",
+    "networkx",
     "numpy",
     "pandas",
     "rdkit",
@@ -42,8 +43,11 @@ test = ["parameterized > 0.8", "pytest >= 6.2", "pytest-cov"]
 
 [tool.black]
 line-length = 100
-target-version = ["py312"]
+target-version = ["py311"]
 skip-magic-trailing-comma = true
 
 [tool.pytest.ini_options]
 addopts = "--cov mol_gnn"
+markers = [
+    "long: marks tests as long (deselect with '-m \"not long\"')",
+]
