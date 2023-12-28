@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import networkx as nx
 import numpy as np
 from mol_gnn.featurizers.graph.base import GraphFeaturizer
 
@@ -8,78 +9,46 @@ from mol_gnn.featurizers.graph.graph import Graph
 from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
 
 
+def calc_rev_index(edge_index: np.ndarray) -> np.ndarray:
+    edge_index = edge_index.T
+    rev_mask = np.all(edge_index[None, :] == np.flip(edge_index, axis=-1)[:, None], axis=-1)
+
+    return np.where(rev_mask)[1]
+
+
 @dataclass
 class MolGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Mol]):
     """A :class:`MolGraphFeaturizer` featurizes molecules into :class:`MolGraph`s`"""
 
     def __call__(self, mol: Mol) -> Graph:
-        n_atoms = mol.GetNumAtoms()
-        n_bonds = mol.GetNumBonds()
-
-        if n_atoms == 0:
+        if mol.GetNumAtoms() == 0:
             V = np.zeros((1, self.node_dim))
-        else:
-            V = np.array([self.atom_featurizer(a) for a in mol.GetAtoms()])
-        E = np.empty((2 * n_bonds, self.edge_dim))
-        edge_index = [[], []]
+            E = np.zeros((0, self.edge_dim))
+            edge_index = np.zeros((2, 0), int)
 
-        i = 0
-        for u in range(n_atoms):
-            for v in range(u + 1, n_atoms):
-                bond = mol.GetBondBetweenAtoms(u, v)
-                if bond is None:
-                    continue
+            return Graph(V, E, edge_index, None)
 
-                e = self.bond_featurizer(bond)
-                E[i : i + 2] = e
+        G = self.mol_to_nx_graph(mol).to_directed()
 
-                edge_index[0].extend([u, v])
-                edge_index[1].extend([v, u])
+        V = np.stack(list(nx.get_node_attributes(G, "x").values()), dtype=float)
+        edges, E = zip(*nx.get_edge_attributes(G, "x").items())
+        E = np.stack(E, dtype=float)
+        edge_index = np.stack(edges, dtype=int).T
+        # sink = np.array(list(nx.get_node_attributes(G, 'sink').values()), int).T
 
-                i += 2
+        return Graph(V, E, edge_index, calc_rev_index(edge_index))
 
-        rev_index = np.arange(len(E)).reshape(-1, 2)[:, ::-1].ravel()
-        edge_index = np.array(edge_index, int)
-
-        return Graph(V, E, edge_index, rev_index)
-
-
-@dataclass
-class LineMolGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Mol]):
-    def __post_init__(self):
-        self.node_dim = self.node_dim + self.edge_dim
-
-    def __call__(self, mol: Mol) -> Graph:
+    def mol_to_nx_graph(self, mol) -> nx.Graph:
         n_atoms = mol.GetNumAtoms()
-        n_bonds = mol.GetNumBonds()
 
-        V = np.zeros((1, self.node_dim)) if n_atoms == 0 else np.empty((n_bonds, self.node_dim))
-        E = []
-        edge_index = [[], []]
+        G = nx.Graph()
+        for u in range(n_atoms):
+            a = mol.GetAtomWithIdx(u)
+            G.add_node(u, x=self.atom_featurizer(a), sink=[u])
+            for v in range(u + 1, n_atoms):
+                b = mol.GetBondBetweenAtoms(u, v)
+                if b is None:
+                    continue
+                G.add_edge(u, v, x=self.bond_featurizer(b))
 
-        i = 0
-        for i in range(n_bonds):
-            bond = mol.GetBondWithIdx(i)
-            u = bond.GetBeginAtomIdx()
-            v = bond.GetEndAtomIdx()
-
-            self.add_edges_to_incident_bonds(edge_index, mol.GetAtomWithIdx(u), i)
-            self.add_edges_to_incident_bonds(edge_index, mol.GetAtomWithIdx(v), i)
-
-            x_v = self.atom_featurizer(mol.GetAtomWithIdx(u))
-            x_u = self.atom_featurizer(mol.GetAtomWithIdx(v))
-            x_e = self.bond_featurizer(bond)
-            V[i] = np.concatenate([(x_u + x_v) / 2, x_e])
-
-        rev_index = np.arange(len(E)).reshape(-1, 2)[:, ::-1].ravel()
-        edge_index = np.array(edge_index, int)
-
-        return Graph(V, E, edge_index, rev_index)
-
-    def add_edges_to_incident_bonds(self, edge_index, atom, i):
-        for b in atom.GetBonds():
-            j = b.GetIdx()
-            if i == j:
-                continue
-            edge_index[0].extend([i])
-            edge_index[1].extend([j])
+        return G
