@@ -48,7 +48,7 @@ class MLP(nn.Sequential, FFN):
         act = get_activation_function(activation)
 
         dims = [input_dim] + [hidden_dim] * n_layers + [output_dim]
-        blocks = [(dropout, nn.Linear(d1, d2), act) for d1, d2 in zip(dims[:-1], dims[1:])]
+        blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
         layers = sum(blocks, [])
 
         super().__init__(*layers[1:-1])
