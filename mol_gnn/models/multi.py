@@ -3,9 +3,9 @@ from typing import Iterable
 import torch
 from torch import Tensor
 
-from mol_gnn.data import BatchMolGraph
+from mol_gnn.data import BatchedGraph
 from mol_gnn.nn import MultiInputMessagePassing, Aggregation, Predictor
-from mol_gnn.models.model import MPNN
+from mol_gnn.models.mpnn import MPNN
 from mol_gnn.nn.metrics import Metric
 
 
@@ -38,7 +38,7 @@ class MulticomponentMPNN(MPNN):
         self.message_passing: MultiInputMessagePassing
 
     def fingerprint(
-        self, bmgs: Iterable[BatchMolGraph], V_ds: Iterable[Tensor], X_f: Tensor | None = None
+        self, bmgs: Iterable[BatchedGraph], V_ds: Iterable[Tensor], X_f: Tensor | None = None
     ) -> Tensor:
         H_vs: list[Tensor] = self.message_passing(bmgs, V_ds)
         Hs = [self.agg(H_v, bmg.batch) for H_v, bmg in zip(H_vs, bmgs)]

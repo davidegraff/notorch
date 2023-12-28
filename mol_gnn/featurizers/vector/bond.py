@@ -3,11 +3,11 @@ from typing import Sequence
 import numpy as np
 from rdkit.Chem.rdchem import BondType
 
-from mol_gnn.featurizers.base import Featurizer
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
 from mol_gnn.types import Bond
 
 
-class MultiHotBondFeaturizer(Featurizer[Bond]):
+class MultiHotBondFeaturizer(VectorFeaturizer[Bond]):
     """A :class:`BondFeaturizer` feauturizes bonds based on the following attributes:
 
     * ``null``-ity (i.e., is the bond ``None``?)

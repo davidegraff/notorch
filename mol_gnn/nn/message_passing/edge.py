@@ -1,7 +1,8 @@
 import torch
 from torch import Tensor, nn
+from mol_gnn.data.batch import BatchedGraph
 
-from mol_gnn.nn.agg import Aggregation, DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
+from mol_gnn.nn.agg import Aggregation
 from mol_gnn.nn.message_passing.agg import DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction
@@ -43,15 +44,8 @@ class EdgeMessagePassing(MessagePassing):
     def output_dim(self) -> int:
         return self.out_embed.output_dim
 
-    def forward(
-        self,
-        V: Tensor,
-        E: Tensor,
-        edge_index: Tensor,
-        rev_index: Tensor | None,
-        V_d: Tensor | None,
-    ) -> Tensor:
-        """Encode a batch of molecular graphs.
+    def forward(self, G: BatchedGraph, V_d: Tensor | None) -> Tensor:
+        """Encode a batch of graphs.
 
         Parameters
         ----------
@@ -74,6 +68,7 @@ class EdgeMessagePassing(MessagePassing):
             a tensor of shape ``b x d_o``, where ``d_o`` is equal to :attr:`self.output_dim`,
             containing the encoding of each vertex in the batch
         """
+        V, E, edge_index, rev_index = G.V, G.E, G.edge_index, G.rev_index
         src, dest = edge_index
         rev_index = calc_rev_index(edge_index) if rev_index is None else rev_index
         dim_size = len(V)
@@ -83,7 +78,7 @@ class EdgeMessagePassing(MessagePassing):
         H = self.act(H_0)
         for _ in range(1, self.depth):
             M = self.message(H, V[src], E)
-            M = self.edge_agg(M, edge_index, dim_size, rev_index)
+            M = self.edge_agg(M, edge_index, dim_size, rev_index=rev_index)
             H = self.update(H, M, H_0)
         H_v = self.node_agg(H, edge_index, dim_size, rev_index=rev_index)
 

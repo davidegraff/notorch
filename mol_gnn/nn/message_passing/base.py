@@ -1,11 +1,12 @@
 from abc import abstractmethod
 
 from torch import nn, Tensor
+from mol_gnn.data.batch import BatchedGraph
 
 from mol_gnn.utils.hparams import HasHParams
 
 
-MessagePassingInput = tuple[Tensor, Tensor, Tensor, Tensor | None, Tensor | None]
+MessagePassingInput = tuple[BatchedGraph, Tensor | None]
 
 
 class MessagePassing(nn.Module, HasHParams):
@@ -14,14 +15,7 @@ class MessagePassing(nn.Module, HasHParams):
     output_dim: int
 
     @abstractmethod
-    def forward(
-        self,
-        V: Tensor,
-        E: Tensor,
-        edge_index: Tensor,
-        rev_index: Tensor | None,
-        V_d: Tensor | None = None,
-    ) -> Tensor:
+    def forward(self, G: BatchedGraph, V_d: Tensor | None) -> Tensor:
         """Encode a batch of molecular graphs.
 
         Parameters

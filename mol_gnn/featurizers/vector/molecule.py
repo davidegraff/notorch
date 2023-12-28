@@ -2,12 +2,12 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem.rdFingerprintGenerator import GetMorganGenerator
 
-from mol_gnn.featurizers.base import Featurizer
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
 from mol_gnn.utils import ClassRegistry
 from mol_gnn.types import Mol
 
 
-MoleculeFeaturizerRegistry = ClassRegistry[Featurizer[Mol]]()
+MoleculeFeaturizerRegistry = ClassRegistry[VectorFeaturizer[Mol]]()
 
 
 class MorganFeaturizerMixin:
@@ -35,10 +35,10 @@ class CountFeaturizerMixin:
 
 
 @MoleculeFeaturizerRegistry("morgan_binary")
-class MorganBinaryFeaturzer(MorganFeaturizerMixin, BinaryFeaturizerMixin, Featurizer[Mol]):
+class MorganBinaryFeaturzer(MorganFeaturizerMixin, BinaryFeaturizerMixin, VectorFeaturizer[Mol]):
     pass
 
 
 @MoleculeFeaturizerRegistry("morgan_count")
-class MorganCountFeaturizer(MorganFeaturizerMixin, CountFeaturizerMixin, Featurizer[Mol]):
+class MorganCountFeaturizer(MorganFeaturizerMixin, CountFeaturizerMixin, VectorFeaturizer[Mol]):
     pass

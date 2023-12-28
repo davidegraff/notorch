@@ -45,7 +45,7 @@ class MultiInputMessagePassing(nn.Module):
             :math:`k`-th component, where ``b`` is the batch size and ``d_o^k`` is the output
             dimension of the :math:`k`-th encoder
         """
-        return [block(*input) for block, input in zip(self.convs, inputs)]
+        return [block(G, V_d) for block, (G, V_d) in zip(self.convs, inputs)]
 
     @classmethod
     def shared(cls, conv: MessagePassing, n_components: int):

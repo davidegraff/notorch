@@ -7,11 +7,6 @@ from mol_gnn.utils.registry import ClassRegistry
 
 
 class MessageFunction(nn.Module):
-    def __init__(self, directed: bool = True) -> None:
-        super().__init__()
-
-        self.directed = directed
-
     @abstractmethod
     def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
         """Calculate the message for each edge given its current hidden state"""
@@ -25,7 +20,7 @@ class Identity(MessageFunction):
         return H
 
 
-@MessageFunctionRegistry.register("node")
-class NodeMessages(MessageFunction):
+@MessageFunctionRegistry.register("cat-edge")
+class CatEdge(MessageFunction):
     def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
         return torch.cat([H, E], dim=1)

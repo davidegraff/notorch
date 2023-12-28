@@ -27,10 +27,10 @@ class MLP(nn.Sequential, FFN):
         \right) \\
         \mathbf h_L &= \mathbf h_{L-1} \mathbf W^{{l)} + \mathbf b^{{l)},
 
-    where :math:`\mathbf x` is the input tensor, :math:`\mathbf W^{{l)}` is the learned weight matrix
-    for the :math:`l`-th layer, :math:`\mathbf b^{{l)}` is the bias vector for the :math:`l`-th layer,
-    :math:`\mathbf h^{{l)}` is the hidden representation at layer :math:`l`, :math:`\sigma` is the
-    activation function, and :math:`L` is the number of layers.
+    where :math:`\mathbf x` is the input tensor, :math:`\mathbf W^{{l)}` is the learned weight
+    matrix for the :math:`l`-th layer, :math:`\mathbf b^{{l)}` is the bias vector for the
+    :math:`l`-th layer, :math:`\mathbf h^{{l)}` is the hidden representation at layer :math:`l`,
+    :math:`\sigma` is the activation function, and :math:`L` is the number of layers.
     """
 
     def __init__(
@@ -47,9 +47,9 @@ class MLP(nn.Sequential, FFN):
         dropout = nn.Dropout(dropout)
         act = get_activation_function(activation)
 
-        dims = [input_dim, *([hidden_dim] * n_layers), output_dim]
-        blocks = ((dropout, nn.Linear(d1, d2), act) for d1, d2 in zip(dims[:-1], dims[1:]))
-        layers = list(chain(*blocks))
+        dims = [input_dim] + [hidden_dim] * n_layers + [output_dim]
+        blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
+        layers = sum(blocks, [])
 
         super().__init__(*layers[1:-1])
 

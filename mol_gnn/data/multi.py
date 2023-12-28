@@ -54,7 +54,7 @@ class MultiInputDataset(Dataset):
         input_batches = [_MolGraphDatasetMixin.collate_batch(batch) for batch in zip(*batches)]
 
         return MultiInputMpnnBatch(
-            [batch.bmg for batch in input_batches],
+            [batch.G for batch in input_batches],
             [batch.V_d for batch in input_batches],
             input_batches[0].X_f,
             input_batches[0].Y,

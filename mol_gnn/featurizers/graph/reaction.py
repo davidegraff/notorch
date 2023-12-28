@@ -4,13 +4,13 @@ from typing import Iterable, Sequence
 import warnings
 
 import numpy as np
-from mol_gnn.featurizers.molgraph.base import MolGraphFeaturizer
+from mol_gnn.featurizers.graph.base import GraphFeaturizer
 from mol_gnn.types import Rxn
 from rdkit import Chem
 from rdkit.Chem.rdchem import Bond, Mol
 
-from mol_gnn.featurizers.molgraph.molgraph import MolGraph
-from mol_gnn.featurizers.molgraph.mixins import _MolGraphFeaturizerMixin
+from mol_gnn.featurizers.graph.graph import Graph
+from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
 from mol_gnn.utils.utils import EnumMapping
 
 
@@ -37,7 +37,7 @@ class RxnMode(EnumMapping):
 
 
 @dataclass
-class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeaturizer[Rxn]):
+class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Rxn]):
     """A :class:`CondensedGraphOfReactionFeaturizer` featurizes reactions using the condensed
     reaction graph method utilized in [1]_
 
@@ -69,8 +69,8 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeatu
         super().__post_init__()
 
         self.mode = mode_
-        self.atom_fdim += len(self.atom_featurizer) - self.atom_featurizer.max_atomic_num - 1
-        self.bond_fdim *= 2
+        self.node_dim += len(self.atom_featurizer) - self.atom_featurizer.max_atomic_num - 1
+        self.edge_dim *= 2
 
     @property
     def mode(self) -> RxnMode:
@@ -80,7 +80,7 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeatu
     def mode(self, m: str | RxnMode):
         self.__mode = RxnMode.get(m)
 
-    def __call__(self, rxn: Rxn) -> MolGraph:
+    def __call__(self, rxn: Rxn) -> Graph:
         reac, pdt = rxn
         r2p_idx_map, pdt_idxs, reac_idxs = self.map_reac_to_prod(reac, pdt)
 
@@ -111,7 +111,7 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeatu
         rev_edge_index = np.arange(len(E)).reshape(-1, 2)[:, ::-1].ravel()
         edge_index = np.array(edge_index, int)
 
-        return MolGraph(V, E, edge_index, rev_edge_index)
+        return Graph(V, E, edge_index, rev_edge_index)
 
     def _calc_node_feature_matrix(
         self,
@@ -297,4 +297,4 @@ class CondensedGraphOfReactionFeaturizer(_MolGraphFeaturizerMixin, MolGraphFeatu
         return r2p_idx_map, pdt_idxs, rct_idxs
 
 
-CGRFeaturizer = CondensedGraphOfReactionFeaturizer
+CGRFeaturizer = CondensedReactionGraphFeaturizer

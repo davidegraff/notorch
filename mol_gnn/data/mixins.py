@@ -9,9 +9,9 @@ import torch
 from torch.utils.data import DataLoader
 
 from mol_gnn.types import Mol
-from mol_gnn.data.batch import BatchMolGraph, MpnnBatch
-from mol_gnn.featurizers.base import Featurizer
-from mol_gnn.featurizers.molgraph import MolGraph
+from mol_gnn.data.batch import BatchedGraph, MpnnBatch
+from mol_gnn.featurizers.vector.base import VectorFeaturizer
+from mol_gnn.featurizers.graph.graph import Graph
 
 
 @dataclass(slots=True)
@@ -29,10 +29,10 @@ class _DatapointMixin:
     x_f: np.ndarray | None = None
     """A vector of length ``d_f`` containing additional features (e.g., Morgan fingerprint) to
     concatenate to the global representation *after* aggregation"""
-    mfs: InitVar[list[Featurizer[Mol]] | None] = None
+    mfs: InitVar[list[VectorFeaturizer[Mol]] | None] = None
     """A list of molecule featurizers to use"""
 
-    def __post_init__(self, mfs: list[Featurizer[Mol]] | None):
+    def __post_init__(self, mfs: list[VectorFeaturizer[Mol]] | None):
         if self.x_f is not None and mfs is not None:
             raise ValueError("Cannot provide both loaded features and molecular featurizers!")
 
@@ -52,7 +52,7 @@ class _DatapointMixin:
 class Datum(NamedTuple):
     """a singular training data point"""
 
-    mg: MolGraph
+    mg: Graph
     V_d: np.ndarray | None
     x_f: np.ndarray | None
     y: np.ndarray | None
@@ -76,7 +76,7 @@ class _MolGraphDatasetMixin:
         mgs, V_ds, x_fs, ys, weights, lt_masks, gt_masks = zip(*batch)
 
         return (
-            BatchMolGraph(mgs),
+            BatchedGraph(mgs),
             None if V_ds[0] is None else torch.from_numpy(np.concatenate(V_ds, axis=0)).float(),
             None if x_fs[0] is None else torch.from_numpy(np.array(x_fs)).float(),
             None if ys[0] is None else torch.from_numpy(np.array(ys)).float(),
