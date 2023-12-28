@@ -5,7 +5,7 @@ from torch import Tensor
 
 from mol_gnn.data import BatchedGraph
 from mol_gnn.nn import MultiInputMessagePassing, Aggregation, Predictor
-from mol_gnn.models.model import MPNN
+from mol_gnn.models.mpnn import MPNN
 from mol_gnn.nn.metrics import Metric
 
 
