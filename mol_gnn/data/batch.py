@@ -10,16 +10,16 @@ from mol_gnn.featurizers import Graph
 
 
 @dataclass(repr=False, eq=False)
-class BatchedMolGraph:
-    """A :class:`BatchedMolGraph` represents a batch of individual :class:`MolGraph`s.
+class BatchedGraph:
+    """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s.
 
-    It has all the attributes of a :class:`MolGraph` with the addition of the :attr:`batch`
+    It has all the attributes of a :class:`Graph` with the addition of the :attr:`batch`
     attribute. This class is intended for use with data loading, so it uses :obj:`~torch.Tensor`s
     to store data
     """
 
-    mgs: InitVar[Iterable[Graph]]
-    """A list of individual :class:`MolGraph`s to be batched together"""
+    Gs: InitVar[Iterable[Graph]]
+    """A list of individual :class:`Graph`s to be batched together"""
     V: Tensor = field(init=False)
     """the atom feature matrix"""
     E: Tensor = field(init=False)
@@ -30,9 +30,9 @@ class BatchedMolGraph:
     """A tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index`."""
     batch: Tensor = field(init=False)
-    """the index of the parent :class:`MolGraph` in the batched graph"""
+    """the index of the parent :class:`Graph` in the batched graph"""
 
-    def __post_init__(self, mgs: Iterable[Graph]):
+    def __post_init__(self, Gs: Iterable[Graph]):
         Vs = []
         Es = []
         edge_indexes = []
@@ -40,14 +40,14 @@ class BatchedMolGraph:
         batch_indexes = []
         offset = 0
 
-        for i, mg in enumerate(mgs):
-            Vs.append(mg.V)
-            Es.append(mg.E)
-            edge_indexes.append(mg.edge_index + offset)
-            rev_indexes.append(mg.rev_index + offset)
-            batch_indexes.append([i] * len(mg.V))
+        for i, G in enumerate(Gs):
+            Vs.append(G.V)
+            Es.append(G.E)
+            edge_indexes.append(G.edge_index + offset)
+            rev_indexes.append(G.rev_index + offset)
+            batch_indexes.append([i] * len(G.V))
 
-            offset += len(mg.V)
+            offset += len(G.V)
 
         self.V = torch.from_numpy(np.concatenate(Vs)).float()
         self.E = torch.from_numpy(np.concatenate(Es)).float()
@@ -57,7 +57,7 @@ class BatchedMolGraph:
 
     @cache
     def __len__(self) -> int:
-        """the number of individual :class:`MolGraph`s in this batch"""
+        """the number of individual :class:`Graph`s in this batch"""
         return self.batch.max() + 1
 
     def to(self, device: str | torch.device):
@@ -69,7 +69,7 @@ class BatchedMolGraph:
 
 
 class MpnnBatch(NamedTuple):
-    bmg: BatchedMolGraph
+    G: BatchedGraph
     V_d: Tensor | None
     X_f: Tensor | None
     Y: Tensor | None
@@ -79,7 +79,7 @@ class MpnnBatch(NamedTuple):
 
 
 class MultiInputMpnnBatch(NamedTuple):
-    bmgs: list[BatchedMolGraph]
+    Gs: list[BatchedGraph]
     V_ds: list[Tensor]
     X_f: Tensor | None
     Y: Tensor | None

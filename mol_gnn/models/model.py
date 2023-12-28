@@ -7,8 +7,8 @@ from lightning import pytorch as pl
 import torch
 from torch import nn, Tensor, optim
 
-from mol_gnn.data import MpnnBatch, BatchedMolGraph
-from mol_gnn.data import BatchedMolGraph
+from mol_gnn.data import MpnnBatch, BatchedGraph
+from mol_gnn.data import BatchedGraph
 from mol_gnn.data.batch import MpnnBatch
 from mol_gnn.nn import Aggregation, MessagePassing, Predictor, LossFunction
 from mol_gnn.nn.encoder import GraphEncoder
@@ -118,7 +118,7 @@ class MPNN(pl.LightningModule):
         return self.predictor.criterion
 
     def fingerprint(
-        self, bmg: BatchedMolGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """the learned fingerprints for the input molecules"""
         V, E, edge_index, rev_index, batch = astuple(bmg)
@@ -129,13 +129,13 @@ class MPNN(pl.LightningModule):
         return H if X_f is None else torch.cat((H, X_f), 1)
 
     def encoding(
-        self, bmg: BatchedMolGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """the final hidden representations for the input molecules"""
         return self.predictor[:-1](self.fingerprint(bmg, V_d, X_f))
 
     def forward(
-        self, bmg: BatchedMolGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """Generate predictions for the input molecules/reactions"""
         return self.predictor(self.fingerprint(bmg, V_d, X_f))
