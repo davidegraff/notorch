@@ -26,7 +26,7 @@ class BatchedGraph:
     """the bond feature matrix"""
     edge_index: Tensor = field(init=False)
     """an tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
-    rev_index: Tensor = field(init=False)
+    rev_index: Tensor | None = field(init=False)
     """A tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index`."""
     batch: Tensor = field(init=False)

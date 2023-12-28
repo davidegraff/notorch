@@ -1,5 +1,6 @@
 import torch
 from torch import Tensor, nn
+from mol_gnn.data.batch import BatchedGraph
 
 from mol_gnn.nn.agg import Aggregation, NodeAggregation
 from mol_gnn.nn.message_passing.agg import NodeAggregation
@@ -44,14 +45,7 @@ class NodeMessagePassing(MessagePassing):
     def output_dim(self) -> int:
         return self.out_embed.output_dim
 
-    def forward(
-        self,
-        V: Tensor,
-        E: Tensor,
-        edge_index: Tensor,
-        rev_index: Tensor | None,
-        V_d: Tensor | None,
-    ) -> Tensor:
+    def forward(self, G: BatchedGraph, V_d: Tensor | None) -> Tensor:
         """Encode a batch of molecular graphs.
 
         Parameters
@@ -75,6 +69,7 @@ class NodeMessagePassing(MessagePassing):
             a tensor of shape ``b x d_o``, where ``d_o`` is equal to :attr:`self.output_dim`,
             containing the encoding of each vertex in the batch
         """
+        V, E, edge_index, rev_index = G.V, G.E, G.edge_index, G.rev_index
         src, dest = edge_index
         rev_index = calc_rev_index(edge_index) if rev_index is None else rev_index
         dim_size = len(V)

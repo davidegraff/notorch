@@ -118,35 +118,33 @@ class MPNN(pl.LightningModule):
         return self.predictor.criterion
 
     def fingerprint(
-        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """the learned fingerprints for the input molecules"""
-        V, E, edge_index, rev_index, batch = astuple(bmg)
-
-        H = self.encoder(V, E, edge_index, rev_index, V_d, batch, len(bmg))
+        H = self.encoder(G, V_d, len(G))
         H = self.bn(H)
 
         return H if X_f is None else torch.cat((H, X_f), 1)
 
     def encoding(
-        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """the final hidden representations for the input molecules"""
-        return self.predictor[:-1](self.fingerprint(bmg, V_d, X_f))
+        return self.predictor[:-1](self.fingerprint(G, V_d, X_f))
 
     def forward(
-        self, bmg: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
+        self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
         """Generate predictions for the input molecules/reactions"""
-        return self.predictor(self.fingerprint(bmg, V_d, X_f))
+        return self.predictor(self.fingerprint(G, V_d, X_f))
 
     def training_step(self, batch: MpnnBatch, batch_idx):
-        bmg, V_d, X_f, targets, w_s, lt_mask, gt_mask = batch
+        G, V_d, X_f, targets, w_s, lt_mask, gt_mask = batch
 
         mask = targets.isfinite()
         targets = targets.nan_to_num(nan=0.0)
 
-        Z = self.fingerprint(bmg, V_d, X_f)
+        Z = self.fingerprint(G, V_d, X_f)
         preds = self.predictor.train_step(Z)
         l = self.criterion(preds, targets, mask, w_s, self.task_weights, lt_mask, gt_mask)
 
@@ -168,11 +166,11 @@ class MPNN(pl.LightningModule):
         self.log_dict(metric2loss, batch_size=len(batch[0]))
 
     def _evaluate_batch(self, batch) -> list[Tensor]:
-        bmg, V_d, X_f, targets, _, lt_mask, gt_mask = batch
+        G, V_d, X_f, targets, _, lt_mask, gt_mask = batch
 
         mask = targets.isfinite()
         targets = targets.nan_to_num(nan=0.0)
-        preds = self(bmg, V_d, X_f)
+        preds = self(G, V_d, X_f)
 
         return [
             metric(preds, targets, mask, None, None, lt_mask, gt_mask)
@@ -199,9 +197,9 @@ class MPNN(pl.LightningModule):
             ``t`` elements the second target, etc.
             * multiclass classification: ``n x t x c``, where ``c`` is the number of classes
         """
-        bmg, X_vd, X_f, *_ = batch
+        G, X_vd, X_f, *_ = batch
 
-        return self(bmg, X_vd, X_f)
+        return self(G, X_vd, X_f)
 
     def configure_optimizers(self):
         opt = optim.Adam(self.parameters(), self.init_lr)

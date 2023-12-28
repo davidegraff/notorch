@@ -1,11 +1,10 @@
 from torch import Tensor, nn
+from mol_gnn.data.batch import BatchedGraph
 
 from mol_gnn.nn.message_passing import MessagePassing
 from mol_gnn.nn import Aggregation
 
-GraphEncoderInput = tuple[
-    Tensor, Tensor, Tensor, Tensor | None, Tensor | None, Tensor
-]
+GraphEncoderInput = tuple[BatchedGraph, Tensor | None, int]
 
 
 class GraphEncoder(nn.Module):
@@ -14,22 +13,13 @@ class GraphEncoder(nn.Module):
 
         self.conv = conv
         self.agg = agg
-    
+
     @property
     def output_dim(self) -> int:
         return self.conv.output_dim
-    
-    def forward(
-        self,
-        V: Tensor,
-        E: Tensor,
-        edge_index: Tensor,
-        rev_index: Tensor | None,
-        V_d: Tensor | None,
-        batch: Tensor,
-        n: int,
-    ) -> Tensor:
-        H_v = self.conv(V, E, edge_index, rev_index, V_d)
-        H, _ = self.agg(H_v, batch, n)
+
+    def forward(self, G: BatchedGraph, V_d: Tensor | None, n: int) -> Tensor:
+        H_v = self.conv(G, V_d)
+        H, _ = self.agg(H_v, G.batch, n)
 
         return H
