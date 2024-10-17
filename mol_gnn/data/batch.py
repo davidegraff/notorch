@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from mol_gnn.featurizers import Graph
+from mol_gnn.data.models.graph import Graph
 
 
 @dataclass(repr=False, eq=False)

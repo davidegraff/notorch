@@ -1,17 +1,22 @@
-from typing import NamedTuple
+from torch import Tensor
 
-import numpy as np
+
+from typing import NamedTuple
 
 
 class Graph(NamedTuple):
     """A :class:`Graph` represents the feature representation of graph."""
 
-    V: np.ndarray
+    V: Tensor
     """an array of shape ``V x d_v`` containing the vertex features of the graph"""
-    E: np.ndarray
+    E: Tensor
     """an array of shape ``E x d_e`` containing the edge features of the graph"""
-    edge_index: np.ndarray
+    edge_index: Tensor
     """an array of shape ``2 x E`` containing the edges of the graph in COO format"""
-    rev_index: np.ndarray
+    rev_index: Tensor
     """A array of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
+
+    @property
+    def A(self) -> Tensor:
+        pass

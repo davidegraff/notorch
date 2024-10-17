@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 from mol_gnn.types import Mol
 from mol_gnn.data.batch import BatchedGraph, MpnnBatch
 from mol_gnn.featurizers.vector.base import VectorFeaturizer
-from mol_gnn.featurizers.graph.graph import Graph
+from mol_gnn.data.models.graph import Graph
 
 
 @dataclass(slots=True)
