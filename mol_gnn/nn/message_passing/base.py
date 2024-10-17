@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 from torch import nn, Tensor
-from mol_gnn.data.batch import BatchedGraph
+from mol_gnn.data.models.graph import BatchedGraph
 
 from mol_gnn.utils.hparams import HasHParams
 

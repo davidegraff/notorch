@@ -7,9 +7,10 @@ from lightning import pytorch as pl
 import torch
 from torch import nn, Tensor, optim
 
-from mol_gnn.data import MpnnBatch, BatchedGraph
-from mol_gnn.data import BatchedGraph
+from mol_gnn.data import MpnnBatch
+from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.data.batch import MpnnBatch
+from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.nn import Aggregation, MessagePassing, Predictor, LossFunction
 from mol_gnn.nn.encoder import GraphEncoder
 from mol_gnn.nn.metrics import Metric
