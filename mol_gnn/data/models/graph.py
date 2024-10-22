@@ -1,84 +1,92 @@
-import numpy as np
-from dataclasses import InitVar, dataclass, field
-from functools import cache
+from dataclasses import InitVar, dataclass
+from typing import Iterable, Self
+
+import torch
 from torch import Tensor
 
 
-from typing import Iterable, NamedTuple
-
-
-class Graph(NamedTuple):
+@dataclass(repr=False, eq=False)
+class Graph:
     """A :class:`Graph` represents the feature representation of graph."""
 
     V: Tensor
-    """an array of shape ``V x d_v`` containing the vertex features of the graph"""
+    """a tensor of shape ``|V| x d_v`` containing the vertex features of the graph"""
     E: Tensor
-    """an array of shape ``E x d_e`` containing the edge features of the graph"""
+    """a tensor of shape ``|E| x d_e`` containing the edge features of the graph"""
     edge_index: Tensor
-    """an array of shape ``2 x E`` containing the edges of the graph in COO format"""
+    """a tensor of shape ``2 x |E|`` containing the edges of the graph in COO format"""
     rev_index: Tensor
-    """A array of shape ``E`` that maps from an edge index to the index of the source of the
+    """a tensor of shape ``|E|`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
 
     @property
     def A(self) -> Tensor:
-        pass
+        num_nodes = self.V.shape[0]
+        src, dest = self.edge_index.unbind(0)
 
+        A = torch.zeros(num_nodes, num_nodes)
+        A[src, dest] = 1
+
+        return A
 
 @dataclass(repr=False, eq=False)
-class BatchedGraph:
-    """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s.
+class BatchedGraph(Graph):
+    """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
 
-    It has all the attributes of a :class:`Graph` with the addition of the :attr:`batch`
-    attribute. This class is intended for use with data loading, so it uses :obj:`~torch.Tensor`s
-    to store data
-    """
-
-    Gs: InitVar[Iterable[Graph]]
-    """A list of individual :class:`Graph`s to be batched together"""
-    V: Tensor = field(init=False)
-    """the atom feature matrix"""
-    E: Tensor = field(init=False)
-    """the bond feature matrix"""
-    edge_index: Tensor = field(init=False)
-    """an tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
-    rev_index: Tensor | None = field(init=False)
-    """A tensor of shape ``E`` that maps from an edge index to the index of the source of the
-    reverse edge in :attr:`edge_index`."""
-    batch: Tensor = field(init=False)
+    batch_node_index: Tensor
     """the index of the parent :class:`Graph` in the batched graph"""
+    batch_edge_index: Tensor
+    """the index of the parent :class:`Graph` in the batched graph"""
+    size: InitVar[int] | None = None
 
-    def __post_init__(self, Gs: Iterable[Graph]):
+    def __post_init__(self, size: int | None):
+        self.__size = self.batch_node_index.max() + 1 if size is None else size
+
+    @classmethod
+    def from_graphs(cls, Gs: Iterable[Graph]):
         Vs = []
         Es = []
-        edge_indexes = []
-        rev_indexes = []
-        batch_indexes = []
+        batch_edge_indices = []
+        rev_indices = []
+        batch_node_indices = []
+        batch_edge_indices = []
         offset = 0
 
         for i, G in enumerate(Gs):
             Vs.append(G.V)
             Es.append(G.E)
-            edge_indexes.append(G.edge_index + offset)
-            rev_indexes.append(G.rev_index + offset)
-            batch_indexes.append([i] * len(G.V))
+            batch_edge_indices.append(G.edge_index + offset)
+            rev_indices.append(G.rev_index + offset)
+            batch_node_indices.append([i] * len(G.V))
+            batch_edge_indices.append([i] * len(G.E))
 
             offset += len(G.V)
 
-        self.V = torch.from_numpy(np.concatenate(Vs)).float()
-        self.E = torch.from_numpy(np.concatenate(Es)).float()
-        self.edge_index = torch.from_numpy(np.hstack(edge_indexes)).long()
-        self.rev_index = torch.from_numpy(np.concatenate(rev_indexes)).long()
-        self.batch = torch.from_numpy(np.concatenate(batch_indexes)).long()
+        V = torch.cat(Vs).float()
+        E = torch.cat(Es).float()
+        edge_index = torch.cat(batch_edge_indices, dim=1).long()
+        rev_index = torch.cat(rev_indices).long()
+        batch_node_index = torch.cat(batch_node_indices).long()
+        batch_edge_index = torch.cat(batch_edge_indices).long()
+        size = i + 1
 
-    @cache
+        return cls(V, E, edge_index, rev_index, batch_node_index, batch_edge_index, size)
+
+    # def to_graphs(self) -> list[Graph]:
+    #     split_sizes = self.batch_node_index.bincount(minlength=len(self))
+
+    #     Vs = self.V.split_with_sizes(split_sizes)
+
     def __len__(self) -> int:
         """the number of individual :class:`Graph`s in this batch"""
-        return self.batch.max() + 1
+        return self.__size
 
-    def to(self, device: str | torch.device):
+    def to(self, device: str | torch.device) -> Self:
         self.V = self.V.to(device)
         self.E = self.E.to(device)
         self.edge_index = self.edge_index.to(device)
         self.rev_index = self.rev_index.to(device)
-        self.batch = self.batch.to(device)
+        self.batch_node_index = self.batch_node_index.to(device)
+        self.batch_edge_index = self.batch_edge_index.to(device)
+
+        return self
