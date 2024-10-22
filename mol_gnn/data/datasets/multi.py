@@ -1,21 +1,19 @@
 from dataclasses import dataclass
-from typing import Iterable
 
 import numpy as np
 from rdkit import Chem
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset, DataLoader
 
-from mol_gnn.data.batch import MultiInputMpnnBatch
-from mol_gnn.data.mixins import _MolGraphDatasetMixin, Datum
-from mol_gnn.data.molecule import MoleculeDataset
-from mol_gnn.data.reaction import ReactionDataset
+from mol_gnn.data.models.datum import Datum
+from mol_gnn.data.datasets.molecule import MoleculeDataset
+from mol_gnn.data.datasets.reaction import ReactionDataset
 
 
 
 @dataclass(repr=False, eq=False)
-class MultiInputDataset(Dataset):
-    """A :class:`MulticomponentDataset` is a :class:`Dataset` composed of parallel
+class MultiInputDataset(Dataset[Datum]):
+    """A :class:`MultiInputDataset` is a :class:`Dataset` composed of parallel
     :class:`MoleculeDataset`s and :class:`ReactionDataset`s"""
 
     datasets: list[MoleculeDataset | ReactionDataset]
@@ -49,19 +47,6 @@ class MultiInputDataset(Dataset):
 
     def reset(self):
         return [dset.reset() for dset in self.datasets]
-
-    def collate_batch(batches: Iterable[Iterable[Datum]]) -> MultiInputMpnnBatch:
-        input_batches = [_MolGraphDatasetMixin.collate_batch(batch) for batch in zip(*batches)]
-
-        return MultiInputMpnnBatch(
-            [batch.G for batch in input_batches],
-            [batch.V_d for batch in input_batches],
-            input_batches[0].X_f,
-            input_batches[0].Y,
-            input_batches[0].w,
-            input_batches[0].lt_mask,
-            input_batches[0].gt_mask,
-        )
 
     def to_dataloader(self, batch_size: int = 128, **kwargs) -> DataLoader:
         return DataLoader(self, batch_size, collate_fn=self.collate_batch, **kwargs)
