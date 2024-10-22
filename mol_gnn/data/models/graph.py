@@ -29,6 +29,70 @@ class Graph:
 
         return A
 
+    @property
+    def P(self) -> Tensor:
+        """The markov transition matrix"""
+        A = self.A
+        P = A / A.sum(1, keepdim=True)
+
+        return P
+
+    @property
+    def dense2sparse(self):
+        """A tensor of shape ``|V| x |V|`` mapping a dense edge index to its index in the edge
+        features tensor.
+        
+        Because the the :class:`Graph` uses a sparse edge representation, this tensor allows
+        one to index an edge by its corresponding nodes::
+        
+            # get the features of the edges going from 0->1 and 2->1
+            G: Graph
+            edges = torch.tensor([[0, 1], [2, 1]])
+            sparse_edge_index = G.dense2sparse[edges]
+            G.E[sparse_edge_index].shape
+            # (d,)
+        """
+        num_nodes = self.V.shape[0]
+        src, dest = self.edge_index.unbind(0)
+
+        index = -torch.ones(num_nodes, num_nodes).long()
+        index[src, dest] = torch.arange(self.edge_index.shape[1])
+
+        return index
+
+    def random_walk(self, length: int, num_samples: int = 1, starting_nodes: Tensor | None = None):
+        """_summary_
+
+        Parameters
+        ----------
+        length : int
+            _description_
+        num_samples : int, optional
+            _description_, by default 1
+        starting_nodes : Tensor | None, optional
+            _description_, by default None
+
+        Returns
+        -------
+        _type_
+            a tensor of shape ``|V| x R x L``
+        """
+        num_nodes = len(self.V)
+
+        if starting_nodes is None:
+            starting_nodes = torch.arange(num_nodes)
+        
+        P = self.P
+        walk = [starting_nodes.view(-1, 1).repeat(1, num_samples)]
+        for _ in range(length):
+            pi = torch.zeros(num_nodes, num_nodes).scatter_(1, walk[-1], value=1)
+            pi = pi / pi.sum(-1, keepdim=True)
+            nodes = (pi @ P).multinomial(num_samples, replacement=True)
+            walk.append(nodes)
+
+        return torch.stack(walk, -1)
+
+
 @dataclass(repr=False, eq=False)
 class BatchedGraph(Graph):
     """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
