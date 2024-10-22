@@ -6,10 +6,11 @@ from typing import Self
 
 from rdkit import Chem
 
+from mol_gnn.data.models.datum import Datum
 from mol_gnn.types import Mol, Rxn
-from mol_gnn.data.molecule import Datum, _MolGraphDatasetMixin
 from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, CGRFeaturizer
-from mol_gnn.data.mixins import _DatapointMixin
+from mol_gnn.data.datasets.molecule import _MolGraphDatasetMixin
+from mol_gnn.data.datasets.mixins import _DatapointMixin
 from mol_gnn.utils.chem import make_mol
 
 

@@ -1,17 +1,12 @@
 from dataclasses import InitVar, dataclass
 from functools import cached_property
-from typing import Iterable, NamedTuple
 
 import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.preprocessing import StandardScaler
-import torch
-from torch.utils.data import DataLoader
 
 from mol_gnn.types import Mol
-from mol_gnn.data.batch import MpnnBatch
 from mol_gnn.featurizers.vector.base import VectorFeaturizer
-from mol_gnn.data.models.graph import BatchedGraph, Graph
 
 
 @dataclass(slots=True)
@@ -49,19 +44,6 @@ class _DatapointMixin:
         return len(self.y) if self.y is not None else 0
 
 
-class Datum(NamedTuple):
-    """a singular training data point"""
-
-    mg: Graph
-    V_d: np.ndarray | None
-    x_f: np.ndarray | None
-    y: np.ndarray | None
-    weight: float
-    lt_mask: np.ndarray | None
-    gt_mask: np.ndarray | None
-
-
-
 class _MolGraphDatasetMixin:
     data: list[_DatapointMixin]
 
@@ -71,23 +53,6 @@ class _MolGraphDatasetMixin:
     def __len__(self) -> int:
         return len(self.data)
         
-    @classmethod
-    def collate_batch(cls, batch: Iterable[Datum]) -> MpnnBatch:
-        mgs, V_ds, x_fs, ys, weights, lt_masks, gt_masks = zip(*batch)
-
-        return (
-            BatchedGraph(mgs),
-            None if V_ds[0] is None else torch.from_numpy(np.concatenate(V_ds, axis=0)).float(),
-            None if x_fs[0] is None else torch.from_numpy(np.array(x_fs)).float(),
-            None if ys[0] is None else torch.from_numpy(np.array(ys)).float(),
-            torch.tensor(weights).unsqueeze(1),
-            None if lt_masks[0] is None else torch.from_numpy(np.array(lt_masks)),
-            None if gt_masks[0] is None else torch.from_numpy(np.array(gt_masks)),
-        )
-
-    def to_dataloader(self, batch_size: int = 128, **kwargs) -> DataLoader:
-        return DataLoader(self, batch_size, collate_fn=self.collate_batch, **kwargs)
-
     @cached_property
     def _Y(self) -> np.ndarray:
         """the raw targets of the dataset"""
