@@ -21,6 +21,7 @@ class Graph:
 
     @property
     def A(self) -> Tensor:
+        """The dense adjacency matrix."""
         num_nodes = self.V.shape[0]
         src, dest = self.edge_index.unbind(0)
 
@@ -28,6 +29,90 @@ class Graph:
         A[src, dest] = 1
 
         return A
+
+    @property
+    def P(self) -> Tensor:
+        """The markov transition matrix."""
+        A = self.A
+        P = A / A.sum(1, keepdim=True)
+
+        return P
+
+    @property
+    def dense2sparse(self):
+        """A tensor of shape ``|V| x |V|`` mapping a dense edge index to its index in the edge
+        features tensor.
+
+        Because the the :class:`Graph` uses a sparse edge representation, this tensor allows
+        one to index an edge by its corresponding nodes::
+
+            # get the features of the edges going from 0->1 and 2->1
+            G: Graph
+            sparse_edge_index = G.dense2sparse[[0, 2], [1, 1]]
+            G.E[sparse_edge_index].shape
+            # (2, d)
+        """
+        num_nodes = self.V.shape[0]
+        src, dest = self.edge_index.unbind(0)
+
+        index = -torch.ones(num_nodes, num_nodes, dtype=torch.long)
+        index[src, dest] = torch.arange(self.edge_index.shape[1])
+
+        return index
+
+    def random_walk(
+        self,
+        length: int,
+        num_walks: int = 1,
+        starting_nodes: Tensor | None = None,
+        return_edge_ids: bool = True,
+    ) -> tuple[Tensor, Tensor | None]:
+        """Generate a random walk trace of given length from the starting nodes.
+
+        Parameters
+        ----------
+        length : int
+            the length of each walk
+        num_walks : int, default=1
+            The number of walks to start from each node in :attr:`starting_nodes`.
+        starting_nodes : Tensor | None, default=None
+            A tensor of shape ``n`` containing the index of the starting nodes in each walk. If
+            ``None``, will start a walk at each node in the graph.
+        return_edge_ids : bool, default=True
+            Whether to return the edge IDs traversed in each walk.
+
+        Returns
+        -------
+        Tensor
+            a tensor of shape ``n x w x (l + 1)`` containing the ID of each node in the walk, where
+            ``n`` is the number of starting nodes, ``w`` is the number of walks to start from each
+            node, and ``l`` is the length of the walk.
+        Tensor | None
+            a tensor of shape ``n x w x l`` containing the ID of each edge in the walk if
+            :attr:`return_edge_ids` is ``True``. Otherwise, ``None``
+        """
+        num_nodes = len(self.V)
+
+        if starting_nodes is None:
+            starting_nodes = torch.arange(num_nodes)
+
+        P = self.P
+        node_ids = [starting_nodes.view(-1, 1).repeat(1, num_walks)]
+        for _ in range(length):
+            curr_node_ids = node_ids[-1]
+            pi = torch.zeros(num_nodes, num_nodes).scatter_(1, curr_node_ids, value=1)
+            pi = pi / pi.sum(-1, keepdim=True)
+            new_node_ids = (pi @ P).multinomial(num_walks, replacement=True)
+            node_ids.append(new_node_ids)
+
+        node_ids = torch.stack(node_ids, -1)
+        if return_edge_ids:
+            edge_ids = self.dense2sparse[node_ids[..., :-1], node_ids[..., 1:]]
+        else:
+            edge_ids = None
+
+        return (node_ids, edge_ids)
+
 
 @dataclass(repr=False, eq=False)
 class BatchedGraph(Graph):
@@ -38,6 +123,8 @@ class BatchedGraph(Graph):
     batch_edge_index: Tensor
     """the index of the parent :class:`Graph` in the batched graph"""
     size: InitVar[int] | None = None
+    """The number of graphs, if known. Otherwise, will be estimated via
+    :code:`batch_node_index.max() + 1`"""
 
     def __post_init__(self, size: int | None):
         self.__size = self.batch_node_index.max() + 1 if size is None else size
