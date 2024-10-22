@@ -1,6 +1,6 @@
 import numpy as np
 
-from mol_gnn.featurizers.graph.graph import Graph
+from mol_gnn.data.models.graph import Graph
 
 
 def find_unique_edge_indices(edge_index: np.ndarray):

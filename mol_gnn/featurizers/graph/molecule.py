@@ -5,7 +5,7 @@ import numpy as np
 from mol_gnn.featurizers.graph.base import GraphFeaturizer
 
 from mol_gnn.types import Mol
-from mol_gnn.featurizers.graph.graph import Graph
+from mol_gnn.data.models.graph import Graph
 from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
 
 

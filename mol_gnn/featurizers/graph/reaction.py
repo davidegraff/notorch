@@ -9,7 +9,7 @@ from mol_gnn.types import Rxn
 from rdkit import Chem
 from rdkit.Chem.rdchem import Bond, Mol
 
-from mol_gnn.featurizers.graph.graph import Graph
+from mol_gnn.data.models.graph import Graph
 from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
 from mol_gnn.utils.utils import EnumMapping
 

@@ -1,5 +1,5 @@
 from torch import Tensor, nn
-from mol_gnn.data.batch import BatchedGraph
+from mol_gnn.data.models.graph import BatchedGraph
 
 from mol_gnn.nn.message_passing import MessagePassing
 from mol_gnn.nn import Aggregation
@@ -20,6 +20,6 @@ class GraphEncoder(nn.Module):
 
     def forward(self, G: BatchedGraph, V_d: Tensor | None, n: int) -> Tensor:
         H_v = self.conv(G, V_d)
-        H, _ = self.agg(H_v, G.batch, n)
+        H, _ = self.agg(H_v, G.batch_node_index, n)
 
         return H

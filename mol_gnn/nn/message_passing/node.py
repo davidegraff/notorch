@@ -1,6 +1,6 @@
 import torch
 from torch import Tensor, nn
-from mol_gnn.data.batch import BatchedGraph
+from mol_gnn.data.models.graph import BatchedGraph
 
 from mol_gnn.nn.agg import Aggregation, NodeAggregation
 from mol_gnn.nn.message_passing.agg import NodeAggregation
