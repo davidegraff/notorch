@@ -137,8 +137,8 @@ class CondensedReactionGraphFeaturizer:
             # (2) regular features for each atom only in the products
             X_v_p1 = np.array(
                 [
-                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
-                    if a.GetIdx() not in reac_idxs
+                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[i]))
+                    if (i := a.GetIdx()) not in reac_idxs
                     else self.atom_transform.num_only(a)
                     for a in rct.GetAtoms()
                 ]

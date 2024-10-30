@@ -4,16 +4,16 @@ import numpy as np
 import torch
 
 from mol_gnn.data.models.graph import Graph
-from mol_gnn.transforms.atom import AtomTransform, MultiTypeAtomTransform
-from mol_gnn.transforms.base import Transform
-from mol_gnn.transforms.bond import BondTransform, MultiTypeBondTransform
-from mol_gnn.types import Mol
+from mol_gnn.transforms.atom import MultiTypeAtomTransform
+from mol_gnn.transforms.base import Transform, TensorTransform
+from mol_gnn.transforms.bond import MultiTypeBondTransform
+from mol_gnn.types import Atom, Bond, Mol
 
 
 @dataclass
 class MolToGraph(Transform[Mol, Graph]):
-    atom_transform: AtomTransform = field(default_factory=MultiTypeAtomTransform)
-    bond_transform: BondTransform = field(default_factory=MultiTypeBondTransform)
+    atom_transform: TensorTransform[Atom] = field(default_factory=MultiTypeAtomTransform)
+    bond_transform: TensorTransform[Bond] = field(default_factory=MultiTypeBondTransform)
 
     @property
     def node_dim(self) -> int:
