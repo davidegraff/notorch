@@ -3,6 +3,7 @@ from typing import Iterable, NamedTuple, Self
 from jaxtyping import Float, Bool
 import torch
 from torch import Tensor
+from torch.types import Device
 
 from mol_gnn.data.models.datum import Datum
 from mol_gnn.data.models.graph import BatchedGraph
@@ -31,6 +32,17 @@ class MpnnBatch(NamedTuple):
             None if gt_masks[0] is None else torch.cat(gt_masks),
         )
 
+    def to(self, device: Device) -> Self:
+        return type(self)(
+            self.G.to(device),
+            self.V_d.to(device),
+            self.X_f.to(device),
+            self.Y.to(device),
+            self.w.to(device),
+            self.lt_mask.to(device),
+            self.gt_mask.to(device),
+        )
+
 
 class MultiInputMpnnBatch(NamedTuple):
     Gs: list[BatchedGraph]
@@ -53,4 +65,15 @@ class MultiInputMpnnBatch(NamedTuple):
             input_batches[0].w,
             input_batches[0].lt_mask,
             input_batches[0].gt_mask,
+        )
+
+    def to(self, device: Device) -> Self:
+        return type(self)(
+            [G.to(device) for G in self.Gs],
+            [V_d.to(device) for V_d in self.V_ds],
+            self.X_f.to(device),
+            self.Y.to(device),
+            self.w.to(device),
+            self.lt_mask.to(device),
+            self.gt_mask.to(device),
         )
