@@ -117,10 +117,10 @@ class MVELoss(LossFunction):
     def forward(self, Y_hat: Tensor, Y: Tensor, *args) -> Tensor:
         mean, var = torch.chunk(Y_hat, 2, 1)
 
-        L_sos = (mean - Y) ** 2 / (2 * var)
+        L_nll = (mean - Y) ** 2 / (2 * var)
         L_kl = (2 * torch.pi * var).log() / 2
 
-        return L_sos + L_kl
+        return L_nll + L_kl
 
 
 @LossFunctionRegistry.register("evidential")

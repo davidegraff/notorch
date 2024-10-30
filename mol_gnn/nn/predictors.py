@@ -5,7 +5,7 @@ import torch
 from torch import nn, Tensor
 from torch.nn import functional as F
 
-from mol_gnn.nn.ffn import MLP
+from mol_gnn.nn.mlp import MLP
 from mol_gnn.nn.loss import *
 from mol_gnn.nn.metrics import *
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
