@@ -1,17 +1,15 @@
+from collections.abc import Mapping
 from dataclasses import InitVar, dataclass
 from enum import auto
 from typing import Iterable, Sequence
-import warnings
 
 import numpy as np
-from mol_gnn.featurizers.graph.base import GraphFeaturizer
-from mol_gnn.types import Rxn
 from rdkit import Chem
-from rdkit.Chem.rdchem import Bond, Mol
 
 from mol_gnn.data.models.graph import Graph
-from mol_gnn.featurizers.graph.mixins import _MolGraphFeaturizerMixin
+from mol_gnn.transforms.base import TensorTransform
 from mol_gnn.utils.utils import EnumMapping
+from mol_gnn.types import Atom, Bond, Mol, Rxn
 
 
 class RxnMode(EnumMapping):
@@ -37,7 +35,7 @@ class RxnMode(EnumMapping):
 
 
 @dataclass
-class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer[Rxn]):
+class CondensedReactionGraphFeaturizer:
     """A :class:`CondensedGraphOfReactionFeaturizer` featurizes reactions using the condensed
     reaction graph method utilized in [1]_
 
@@ -62,14 +60,15 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         Representations of the Condensed Graph of Reaction." J. Chem. Inf. Model. 2022, 62,
         2101-2110. https://doi.org/10.1021/acs.jcim.1c00975
     """
-
+    atom_transform: TensorTransform[Atom]
+    bond_transform: TensorTransform[Bond]
     mode_: InitVar[str | RxnMode] = RxnMode.REAC_DIFF
 
     def __post_init__(self, mode_: str | RxnMode):
         super().__post_init__()
 
         self.mode = mode_
-        self.node_dim += len(self.atom_featurizer) - self.atom_featurizer.max_atomic_num - 1
+        self.node_dim += len(self.atom_transform) - self.atom_transform.max_atomic_num - 1
         self.edge_dim *= 2
 
     @property
@@ -88,12 +87,11 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         E = []
         edge_index = [[], []]
 
-        n_atoms_tot = len(V)
         n_atoms_reac = reac.GetNumAtoms()
 
         i = 0
-        for u in range(n_atoms_tot):
-            for v in range(u + 1, n_atoms_tot):
+        for u in range(len(V)):
+            for v in range(u + 1, len(V)):
                 b_reac, b_prod = self._get_bonds(
                     reac, pdt, r2p_idx_map, pdt_idxs, n_atoms_reac, u, v
                 )
@@ -122,15 +120,15 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         reac_idxs: Iterable[int],
     ) -> np.ndarray:
         """Calculate the node feature matrix for the reaction"""
-        X_v_r1 = np.array([self.atom_featurizer(a) for a in rct.GetAtoms()])
-        X_v_p2 = np.array([self.atom_featurizer(pdt.GetAtomWithIdx(i)) for i in pdt_idxs])
+        X_v_r1 = np.array([self.atom_transform(a) for a in rct.GetAtoms()])
+        X_v_p2 = np.array([self.atom_transform(pdt.GetAtomWithIdx(i)) for i in pdt_idxs])
         X_v_p2 = X_v_p2.reshape(-1, X_v_r1.shape[1])
 
         if self.mode in [RxnMode.REAC_DIFF, RxnMode.PROD_DIFF, RxnMode.REAC_PROD]:
             # Reactant:
             # (1) regular features for each atom in the reactants
             # (2) zero features for each atom that's only in the products
-            X_v_r2 = [self.atom_featurizer.num_only(pdt.GetAtomWithIdx(i)) for i in pdt_idxs]
+            X_v_r2 = [self.atom_transform.num_only(pdt.GetAtomWithIdx(i)) for i in pdt_idxs]
             X_v_r2 = np.array(X_v_r2).reshape(-1, X_v_r1.shape[1])
 
             # Product:
@@ -139,9 +137,9 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
             # (2) regular features for each atom only in the products
             X_v_p1 = np.array(
                 [
-                    self.atom_featurizer(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
-                    if a.GetIdx() not in reac_idxs
-                    else self.atom_featurizer.num_only(a)
+                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[i]))
+                    if (i := a.GetIdx()) not in reac_idxs
+                    else self.atom_transform.num_only(a)
                     for a in rct.GetAtoms()
                 ]
             )
@@ -149,7 +147,7 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
             # Reactant:
             # (1) regular features for each atom in the reactants
             # (2) regular features for each atom only in the products
-            X_v_r2 = [self.atom_featurizer(pdt.GetAtomWithIdx(i)) for i in pdt_idxs]
+            X_v_r2 = [self.atom_transform(pdt.GetAtomWithIdx(i)) for i in pdt_idxs]
             X_v_r2 = np.array(X_v_r2).reshape(-1, X_v_r1.shape[1])
 
             # Product:
@@ -158,9 +156,9 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
             # (2) regular features for each atom only in the products
             X_v_p1 = np.array(
                 [
-                    self.atom_featurizer(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
+                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
                     if a.GetIdx() not in reac_idxs
-                    else self.atom_featurizer(a)
+                    else self.atom_transform(a)
                     for a in rct.GetAtoms()
                 ]
             )
@@ -171,13 +169,13 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         m = min(len(X_v_r), len(X_v_p))
 
         if self.mode in [RxnMode.REAC_PROD, RxnMode.REAC_PROD_BALANCE]:
-            X_v = np.hstack((X_v_r[:m], X_v_p[:m, self.atom_featurizer.max_atomic_num + 1 :]))
+            X_v = np.hstack((X_v_r[:m], X_v_p[:m, self.atom_transform.max_atomic_num + 1 :]))
         else:
             X_v_d = X_v_p[:m] - X_v_r[:m]
             if self.mode in [RxnMode.REAC_DIFF, RxnMode.REAC_DIFF_BALANCE]:
-                X_v = np.hstack((X_v_r[:m], X_v_d[:m, self.atom_featurizer.max_atomic_num + 1 :]))
+                X_v = np.hstack((X_v_r[:m], X_v_d[:m, self.atom_transform.max_atomic_num + 1 :]))
             else:
-                X_v = np.hstack((X_v_p[:m], X_v_d[:m, self.atom_featurizer.max_atomic_num + 1 :]))
+                X_v = np.hstack((X_v_p[:m], X_v_d[:m, self.atom_transform.max_atomic_num + 1 :]))
 
         return X_v
 
@@ -185,12 +183,12 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         self,
         rct: Bond,
         pdt: Bond,
-        ri2pj: dict[int, int],
+        ri2pj: Mapping[int, int],
         pids: Sequence[int],
         n_atoms_r: int,
         u: int,
         v: int,
-    ) -> tuple[Bond, Bond]:
+    ) -> tuple[Bond | None, Bond | None]:
         """get the corresponding reactant- and product-side bond, respectively, betweeen atoms
         :attr:`u` and :attr:`v`"""
         if u >= n_atoms_r and v >= n_atoms_r:
@@ -229,8 +227,8 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
 
     def _calc_edge_feature(self, b_reac: Bond, b_pdt: Bond):
         """Calculate the global features of the two bonds"""
-        x_e_r = self.bond_featurizer(b_reac)
-        x_e_p = self.bond_featurizer(b_pdt)
+        x_e_r = self.bond_transform(b_reac)
+        x_e_p = self.bond_transform(b_pdt)
         x_e_d = x_e_p - x_e_r
 
         if self.mode in [RxnMode.REAC_PROD, RxnMode.REAC_PROD_BALANCE]:
@@ -244,15 +242,15 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
 
     @classmethod
     def map_reac_to_prod(
-        cls, reacs: Chem.Mol, pdts: Chem.Mol
+        cls, reacs: Mol, pdts: Mol
     ) -> tuple[dict[int, int], list[int], list[int]]:
         """Map atom indices between corresponding atoms in the reactant and product molecules
 
         Parameters
         ----------
-        reacs : Chem.Mol
+        reacs : Mol
             An RDKit molecule of the reactants
-        pdts : Chem.Mol
+        pdts : Mol
             An RDKit molecule of the products
 
         Returns
@@ -268,9 +266,9 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         mapno2pj = {}
         reac_atommap_nums = {a.GetAtomMapNum() for a in reacs.GetAtoms()}
 
-        for a in pdts.GetAtoms():
-            map_num = a.GetAtomMapNum()
-            j = a.GetIdx()
+        for atom in pdts.GetAtoms():
+            map_num = atom.GetAtomMapNum()
+            j = atom.GetIdx()
 
             if map_num > 0:
                 mapno2pj[map_num] = j
@@ -282,9 +280,9 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
         rct_idxs = []
         r2p_idx_map = {}
 
-        for a in reacs.GetAtoms():
-            map_num = a.GetAtomMapNum()
-            i = a.GetIdx()
+        for atom in reacs.GetAtoms():
+            map_num = atom.GetAtomMapNum()
+            i = atom.GetIdx()
 
             if map_num > 0:
                 try:
@@ -298,3 +296,5 @@ class CondensedReactionGraphFeaturizer(_MolGraphFeaturizerMixin, GraphFeaturizer
 
 
 CGRFeaturizer = CondensedReactionGraphFeaturizer
+
+raise ImportError
