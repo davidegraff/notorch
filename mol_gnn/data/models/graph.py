@@ -1,7 +1,7 @@
 from dataclasses import InitVar, dataclass
 from typing import Iterable, Self
 
-from jaxtyping import Int
+from jaxtyping import Float, Int
 import torch
 from torch import Tensor
 from torch.types import Device
@@ -30,7 +30,7 @@ class Graph:
         return len(self.E)
 
     @property
-    def A(self) -> Tensor:
+    def A(self) -> Int[Tensor, "V V"]:
         """The dense adjacency matrix."""
         num_nodes = self.V.shape[0]
         src, dest = self.edge_index.unbind(0)
@@ -41,7 +41,7 @@ class Graph:
         return A
 
     @property
-    def P(self) -> Tensor:
+    def P(self) -> Float[Tensor, "V V"]:
         """The markov transition matrix."""
         A = self.A
         P = A / A.sum(1, keepdim=True)
@@ -49,7 +49,7 @@ class Graph:
         return P
 
     @property
-    def dense2sparse(self):
+    def dense2sparse(self) -> Int[Tensor, "V V"]:
         """A tensor of shape ``|V| x |V|`` mapping a dense edge index to its index in the edge
         features tensor.
 
@@ -76,7 +76,7 @@ class Graph:
         num_walks: int = 1,
         starting_nodes: Tensor | None = None,
         return_edge_ids: bool = True,
-    ) -> tuple[Tensor, Tensor | None]:
+    ) -> tuple[Int[Tensor, "n w l-1"], Int[Tensor, "n w l"] | None]:
         """Generate a random walk trace of given length from the starting nodes.
 
         Parameters
