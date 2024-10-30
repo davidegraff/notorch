@@ -1,26 +1,36 @@
 from dataclasses import InitVar, dataclass
 from typing import Iterable, Self
 
+from jaxtyping import Float, Int
 import torch
 from torch import Tensor
+from torch.types import Device
 
 
 @dataclass(repr=False, eq=False)
 class Graph:
     """A :class:`Graph` represents the feature representation of graph."""
 
-    V: Tensor
-    """a tensor of shape ``|V| x d_v`` containing the vertex features of the graph"""
-    E: Tensor
-    """a tensor of shape ``|E| x d_e`` containing the edge features of the graph"""
-    edge_index: Tensor
-    """a tensor of shape ``2 x |E|`` containing the edges of the graph in COO format"""
-    rev_index: Tensor
+    V: Int[Tensor, "V t_v"]
+    """a tensor of shape ``|V| x t_v`` containing the vertex types of the graph"""
+    E: Int[Tensor, "E t_e"]
+    """a tensor of shape ``|E| x t_e`` containing the edge types of the graph"""
+    edge_index: Int[Tensor, "2 E"]
+    """a tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
+    rev_index: Int[Tensor, "E"]
     """a tensor of shape ``|E|`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
 
     @property
-    def A(self) -> Tensor:
+    def num_nodes(self) -> int:
+        return len(self.V)
+
+    @property
+    def num_edges(self) -> int:
+        return len(self.E)
+
+    @property
+    def A(self) -> Int[Tensor, "V V"]:
         """The dense adjacency matrix."""
         num_nodes = self.V.shape[0]
         src, dest = self.edge_index.unbind(0)
@@ -31,7 +41,7 @@ class Graph:
         return A
 
     @property
-    def P(self) -> Tensor:
+    def P(self) -> Float[Tensor, "V V"]:
         """The markov transition matrix."""
         A = self.A
         P = A / A.sum(1, keepdim=True)
@@ -39,7 +49,7 @@ class Graph:
         return P
 
     @property
-    def dense2sparse(self):
+    def dense2sparse(self) -> Int[Tensor, "V V"]:
         """A tensor of shape ``|V| x |V|`` mapping a dense edge index to its index in the edge
         features tensor.
 
@@ -66,7 +76,7 @@ class Graph:
         num_walks: int = 1,
         starting_nodes: Tensor | None = None,
         return_edge_ids: bool = True,
-    ) -> tuple[Tensor, Tensor | None]:
+    ) -> tuple[Int[Tensor, "n w l-1"], Int[Tensor, "n w l"] | None]:
         """Generate a random walk trace of given length from the starting nodes.
 
         Parameters
@@ -118,10 +128,10 @@ class Graph:
 class BatchedGraph(Graph):
     """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
 
-    batch_node_index: Tensor
-    """the index of the parent :class:`Graph` in the batched graph"""
-    batch_edge_index: Tensor
-    """the index of the parent :class:`Graph` in the batched graph"""
+    batch_node_index: Int[Tensor, "V"]
+    """the index of the parent :class:`Graph` of each node the batched graph"""
+    batch_edge_index: Int[Tensor, "E"]
+    """the index of the parent :class:`Graph` of each edge the batched graph"""
     size: InitVar[int] | None = None
     """The number of graphs, if known. Otherwise, will be estimated via
     :code:`batch_node_index.max() + 1`"""
@@ -168,7 +178,7 @@ class BatchedGraph(Graph):
         """the number of individual :class:`Graph`s in this batch"""
         return self.__size
 
-    def to(self, device: str | torch.device) -> Self:
+    def to(self, device: Device) -> Self:
         self.V = self.V.to(device)
         self.E = self.E.to(device)
         self.edge_index = self.edge_index.to(device)

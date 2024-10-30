@@ -1,7 +1,9 @@
 from typing import Iterable, NamedTuple, Self
 
+from jaxtyping import Float, Bool
 import torch
 from torch import Tensor
+from torch.types import Device
 
 from mol_gnn.data.models.datum import Datum
 from mol_gnn.data.models.graph import BatchedGraph
@@ -9,12 +11,12 @@ from mol_gnn.data.models.graph import BatchedGraph
 
 class MpnnBatch(NamedTuple):
     G: BatchedGraph
-    V_d: Tensor | None
-    X_f: Tensor | None
-    Y: Tensor | None
-    w: Tensor
-    lt_mask: Tensor | None
-    gt_mask: Tensor | None
+    V_d: Float[Tensor, "V d_f"] | None
+    X_f: Float[Tensor, "b d_f"] | None
+    Y: Float[Tensor, "b d_o"] | None
+    w: Float[Tensor, "b"]
+    lt_mask: Bool[Tensor, "b d_o"] | None
+    gt_mask: Bool[Tensor, "b d_o"] | None
 
     @classmethod
     def collate(cls, batch: Iterable[Datum]) -> Self:
@@ -30,14 +32,26 @@ class MpnnBatch(NamedTuple):
             None if gt_masks[0] is None else torch.cat(gt_masks),
         )
 
+    def to(self, device: Device) -> Self:
+        return type(self)(
+            self.G.to(device),
+            self.V_d.to(device),
+            self.X_f.to(device),
+            self.Y.to(device),
+            self.w.to(device),
+            self.lt_mask.to(device),
+            self.gt_mask.to(device),
+        )
+
+
 class MultiInputMpnnBatch(NamedTuple):
     Gs: list[BatchedGraph]
-    V_ds: list[Tensor]
-    X_f: Tensor | None
-    Y: Tensor | None
-    w: Tensor
-    lt_mask: Tensor | None
-    gt_mask: Tensor | None
+    V_ds: list[Float[Tensor, "V d_h"] | None]
+    X_f: Float[Tensor, "b d_z"] | None
+    Y: Float[Tensor, "b d_o"] | None
+    w: Float[Tensor, "b"]
+    lt_mask: Bool[Tensor, "b d_o"] | None
+    gt_mask: Bool[Tensor, "b d_o"] | None
 
     @classmethod
     def collate(cls, batches: Iterable[Iterable[Datum]]) -> Self:
@@ -51,4 +65,15 @@ class MultiInputMpnnBatch(NamedTuple):
             input_batches[0].w,
             input_batches[0].lt_mask,
             input_batches[0].gt_mask,
+        )
+
+    def to(self, device: Device) -> Self:
+        return type(self)(
+            [G.to(device) for G in self.Gs],
+            [V_d.to(device) for V_d in self.V_ds],
+            self.X_f.to(device),
+            self.Y.to(device),
+            self.w.to(device),
+            self.lt_mask.to(device),
+            self.gt_mask.to(device),
         )
