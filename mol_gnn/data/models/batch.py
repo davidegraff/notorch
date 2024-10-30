@@ -1,5 +1,6 @@
 from typing import Iterable, NamedTuple, Self
 
+from jaxtyping import Float, Bool
 import torch
 from torch import Tensor
 
@@ -9,12 +10,12 @@ from mol_gnn.data.models.graph import BatchedGraph
 
 class MpnnBatch(NamedTuple):
     G: BatchedGraph
-    V_d: Tensor | None
-    X_f: Tensor | None
-    Y: Tensor | None
-    w: Tensor
-    lt_mask: Tensor | None
-    gt_mask: Tensor | None
+    V_d: Float[Tensor, "V d_f"] | None
+    X_f: Float[Tensor, "b d_f"] | None
+    Y: Float[Tensor, "b d_o"] | None
+    w: Float[Tensor, "b"]
+    lt_mask: Bool[Tensor, "b d_o"] | None
+    gt_mask: Bool[Tensor, "b d_o"] | None
 
     @classmethod
     def collate(cls, batch: Iterable[Datum]) -> Self:
@@ -30,14 +31,15 @@ class MpnnBatch(NamedTuple):
             None if gt_masks[0] is None else torch.cat(gt_masks),
         )
 
+
 class MultiInputMpnnBatch(NamedTuple):
     Gs: list[BatchedGraph]
-    V_ds: list[Tensor]
-    X_f: Tensor | None
-    Y: Tensor | None
-    w: Tensor
-    lt_mask: Tensor | None
-    gt_mask: Tensor | None
+    V_ds: list[Float[Tensor, "V d_h"] | None]
+    X_f: Float[Tensor, "b d_z"] | None
+    Y: Float[Tensor, "b d_o"] | None
+    w: Float[Tensor, "b"]
+    lt_mask: Bool[Tensor, "b d_o"] | None
+    gt_mask: Bool[Tensor, "b d_o"] | None
 
     @classmethod
     def collate(cls, batches: Iterable[Iterable[Datum]]) -> Self:
