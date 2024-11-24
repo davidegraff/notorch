@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from collections.abc import Iterable, Sequence, Sized
+from collections.abc import Iterable, Sequence
 from functools import singledispatchmethod
 
 from jaxtyping import Int

@@ -6,8 +6,7 @@ from torch import Tensor, nn
 from torch_scatter import scatter_max, scatter_mean, scatter_sum, scatter_softmax
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
-from mol_gnn.nn.layers import MultiPermutation, Permutation
-from mol_gnn.utils import HasHParams
+from mol_gnn.nn.layers import MultiPermutation
 from mol_gnn.utils.registry import ClassRegistry
 
 
