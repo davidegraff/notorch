@@ -52,7 +52,7 @@ class _MolGraphDatasetMixin:
 
     def __len__(self) -> int:
         return len(self.data)
-        
+
     @cached_property
     def _Y(self) -> np.ndarray:
         """the raw targets of the dataset"""
@@ -110,7 +110,7 @@ class _MolGraphDatasetMixin:
         """Normalizes the targets of this dataset using a :obj:`StandardScaler`
 
         The :obj:`StandardScaler` subtracts the mean and divides by the standard deviation for
-        each task independently. 
+        each task independently.
 
         .. note::
             This should only be used for regression datasets.
@@ -154,4 +154,3 @@ class _MolGraphDatasetMixin:
                 f"number of molecules ({len(self.data)}) and {label} ({len(X)}) "
                 "must have same length!"
             )
-        

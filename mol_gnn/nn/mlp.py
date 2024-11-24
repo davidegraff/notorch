@@ -24,7 +24,7 @@ class MLP(nn.Sequential):
         hidden_dim: int = 300,
         n_layers: int = 1,
         dropout: float = 0.0,
-        activation: type[nn.Module] = nn.ReLU()
+        activation: type[nn.Module] = nn.ReLU(),
     ):
         super().__init__()
 

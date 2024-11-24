@@ -70,9 +70,7 @@ class LossFunction(ABC, ReprMixin):
         return L.sum() / mask.sum()
 
     @abstractmethod
-    def forward(
-        self, Y_hat, Y, mask, sample_weights, task_weights, lt_mask, gt_mask
-    ) -> Tensor:
+    def forward(self, Y_hat, Y, mask, sample_weights, task_weights, lt_mask, gt_mask) -> Tensor:
         """Calculate the *unreduced* loss tensor."""
 
 
@@ -192,7 +190,7 @@ class MccMixin:
         mask: Tensor,
         sample_weights: Tensor,
         task_weights: Tensor,
-        *args
+        *args,
     ):
         if not (0 <= Y_hat.min() and Y_hat.max() <= 1):  # assume logits
             Y_hat = Y_hat.softmax(2)
@@ -211,9 +209,7 @@ class BinaryMCCLoss(LossFunction, MccMixin):
         TN = ((1 - Y) * (1 - Y_hat) * sample_weights * mask).sum(0, keepdim=True)
         FN = (Y * (1 - Y_hat) * sample_weights * mask).sum(0, keepdim=True)
 
-        MCC = (TP * TN - FP * FN) / (
-            (TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)
-        ).sqrt()
+        MCC = (TP * TN - FP * FN) / ((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN)).sqrt()
 
         return 1 - MCC
 
@@ -278,11 +274,7 @@ class DirichletMixin:
         dg0 = torch.digamma(alpha)
         dg1 = torch.digamma(S_alpha)
 
-        L_kl = (
-            ln_alpha
-            + ln_beta
-            + torch.sum((alpha - beta) * (dg0 - dg1), -1, keepdim=True)
-        )
+        L_kl = ln_alpha + ln_beta + torch.sum((alpha - beta) * (dg0 - dg1), -1, keepdim=True)
 
         return (L_mse + self.v_kl * L_kl).mean(-1)
 

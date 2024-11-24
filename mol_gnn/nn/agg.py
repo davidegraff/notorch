@@ -11,7 +11,6 @@ from mol_gnn.utils import HasHParams
 from mol_gnn.utils.registry import ClassRegistry
 
 
-
 class Aggregation(nn.Module):
     @abstractmethod
     def forward(

@@ -1,4 +1,5 @@
 """Global configuration variables for mol_gnn"""
+
 from mol_gnn.featurizers.graph.molecule import MolGraphFeaturizer
 
 

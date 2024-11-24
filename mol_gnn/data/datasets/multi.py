@@ -10,7 +10,6 @@ from mol_gnn.data.datasets.molecule import MoleculeDataset
 from mol_gnn.data.datasets.reaction import ReactionDataset
 
 
-
 @dataclass(repr=False, eq=False)
 class MultiInputDataset(Dataset[Datum]):
     """A :class:`MultiInputDataset` is a :class:`Dataset` composed of parallel

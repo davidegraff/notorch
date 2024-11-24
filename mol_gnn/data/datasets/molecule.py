@@ -19,9 +19,7 @@ class _MoleculeDatapointMixin:
     """the molecule associated with this datapoint"""
 
     @classmethod
-    def from_smi(
-        cls, smi: str, *args, keep_h: bool = False, add_h: bool = False, **kwargs
-    ) -> Self:
+    def from_smi(cls, smi: str, *args, keep_h: bool = False, add_h: bool = False, **kwargs) -> Self:
         mol = make_mol(smi, keep_h, add_h)
 
         return cls(mol, *args, **kwargs)
@@ -84,7 +82,7 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
 
     def __getitem__(self, idx: int) -> Datum:
         d = self.data[idx]
-        mg = self.featurizer(d.mol)#self.V_fs[idx], self.E_fs[idx])
+        mg = self.featurizer(d.mol)  # self.V_fs[idx], self.E_fs[idx])
 
         return Datum(mg, self.V_ds[idx], self.X_f[idx], self.Y[idx], d.weight, d.lt_mask, d.gt_mask)
 

@@ -4,7 +4,6 @@ from enum import StrEnum
 from typing import Iterable, Iterator, Self
 
 
-
 class EnumMapping(StrEnum):
     @classmethod
     def get(cls, name: str | Self) -> Self:

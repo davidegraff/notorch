@@ -6,7 +6,6 @@ from torch import nn, Tensor
 from mol_gnn.data.models.graph import BatchedGraph, Graph
 
 
-
 MessagePassingInput = tuple[BatchedGraph, Tensor | None]
 
 
