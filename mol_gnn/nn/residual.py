@@ -7,12 +7,12 @@ import torch
 T_mod = TypeVar("T_mod", bound=nn.Module)
 
 
-class Residual[S_inp, T_mod](nn.Module):
-    def __init__(self, module: T_mod, op: Callable[[S_inp, S_inp], S_inp] = torch.add):
+class Residual[T_mod](nn.Module):
+    def __init__(self, module: T_mod, op: Callable = torch.add):
         super().__init__()
 
         self.module = module
         self.op = op
 
-    def forward(self, input: S_inp):
+    def forward(self, input):
         return self.op(input, self.module(input))

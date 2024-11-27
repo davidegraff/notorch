@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
-from functools import singledispatchmethod
+from collections.abc import Iterable, Sequence, Sized
 
 from jaxtyping import Int
 from rdkit.Chem import Atom
@@ -10,10 +9,9 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.base import TensorTransform
+from mol_gnn.transforms.base import Transform
 from mol_gnn.transforms.utils.index_map import build, IndexMapWithUnknown
 
-PADDING_INDEX = 0
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
 DEGREES = [0, 1, 2, 3]
 HYBRIDIZATIONS = [
@@ -34,7 +32,7 @@ NUM_HS = [0, 1, 2, 3, 4]
 FORMAL_CHARGES = [-1, -2, 1, 2, 0]
 
 
-class ElementOnlyAtomTransform(TensorTransform[Atom]):
+class ElementOnlyAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V 1"]]):
     def __init__(self, elements: Sequence[str] = ELEMENTS):
         self.element_map = IndexMapWithUnknown(elements)
 
@@ -45,20 +43,13 @@ class ElementOnlyAtomTransform(TensorTransform[Atom]):
     def num_types(self) -> int:
         return 1
 
-    @singledispatchmethod
-    def __call__(self, input) -> Int[Tensor, "d"]:
-        types = [self.element_map[input.GetSymbol()]]
-
-        return torch.tensor(types)
-
-    @__call__.register
-    def _(self, input: Iterable[Atom]) -> Int[Tensor, "n d"]:
+    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "V d"]:
         types = [[self.element_map[atom.GetSymbol()]] for atom in input]
 
         return torch.tensor(types)
 
 
-class MultiTypeAtomTransform(TensorTransform[Atom]):
+class MultiTypeAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V t"]]):
     def __init__(
         self,
         elements: Sequence[str] | None = ELEMENTS,
@@ -123,14 +114,13 @@ class MultiTypeAtomTransform(TensorTransform[Atom]):
 
         return types
 
-    @singledispatchmethod
-    def __call__(self, input) -> Int[Tensor, "d"]:
-        types = self._transform_single(input)
-
-        return torch.tensor(types) + self.offset
-
-    @__call__.register
-    def _(self, input: Iterable[Atom]) -> Int[Tensor, "n d"]:
+    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "V d"]:
         types = [self._transform_single(atom) for atom in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
+
+    # @singledispatchmethod
+    # def __call__(self, input) -> Int[Tensor, "d"]:
+    #     types = self._transform_single(input)
+
+    #     return torch.tensor(types) + self.offset

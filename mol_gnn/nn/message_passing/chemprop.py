@@ -2,21 +2,13 @@ from __future__ import annotations
 from copy import copy
 from typing import Literal
 
-import torch
-from torch import Tensor, nn
+from torch import nn
 from torch_scatter import scatter
 
 from mol_gnn.data.models.graph import Graph
 from mol_gnn.nn.residual import Residual
 
 Reduction = Literal["mean", "sum", "min", "max"]
-
-
-def calc_rev_index(edge_index: Tensor) -> Tensor:
-    edge_index = edge_index.T
-    rev_mask = (edge_index[None, :] == edge_index.flip(-1)[:, None]).all(-1)
-
-    return torch.where(rev_mask)[1]
 
 
 class ChempropLayer(nn.Module):

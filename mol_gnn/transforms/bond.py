@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-from functools import singledispatchmethod
+from collections.abc import Iterable, Sized
 
 from jaxtyping import Int
 from rdkit.Chem import Bond
@@ -10,7 +9,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.base import TensorTransform
+from mol_gnn.transforms.base import Transform
 from mol_gnn.transforms.utils.index_map import build, IndexMapWithUnknown
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
@@ -25,27 +24,26 @@ BOND_STEREOS = [
 ]
 
 
-class TypeOnlyTransform(TensorTransform[Bond]):
+class TypeOnlyTransform(Sized, Transform[Iterable[Bond], Int[Tensor, "E 1"]]):
     def __init__(self, bond_types: Iterable[BondType] = BOND_TYPES):
         self.bond_type_map = IndexMapWithUnknown(bond_types)
-
-    @singledispatchmethod
-    def __call__(self, input: Bond) -> Int[Tensor, "d"]:
-        types = [self.bond_type_map[input.GetBondType()]]
-
-        return torch.tensor(types)
-
-    @__call__.register
-    def _(self, input: Iterable[Bond]) -> Int[Tensor, "*n d"]:
-        types = [[self.bond_type_map[bond.GetBondType()]] for bond in input]
-
-        return torch.tensor(types)
 
     def __len__(self) -> int:
         return len(self.bond_type_map)
 
+    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "*n d"]:
+        types = [[self.bond_type_map[bond.GetBondType()]] for bond in input]
 
-class MultiTypeBondTransform(TensorTransform[Bond]):
+        return torch.tensor(types)
+
+    # @singledispatchmethod
+    # def __call__(self, input: Bond) -> Int[Tensor, "d"]:
+    #     types = [self.bond_type_map[input.GetBondType()]]
+
+    #     return torch.tensor(types)
+
+
+class MultiTypeBondTransform(Sized, Transform[Iterable[Bond], Int[Tensor, "E t"]]):
     def __init__(
         self,
         bond_types: Iterable[BondType] | None = BOND_TYPES,
@@ -76,14 +74,13 @@ class MultiTypeBondTransform(TensorTransform[Bond]):
 
         return types
 
-    @singledispatchmethod
-    def __call__(self, input: Bond) -> Int[Tensor, "d"]:
-        types = self._transform_single(input)
-
-        return torch.tensor(types) + self.offset
-
-    @__call__.register
-    def _(self, input: Iterable[Bond]) -> Int[Tensor, "*n d"]:
-        types = [self._transform_single(atom) for atom in input]
+    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "E t"]:
+        types = [self._transform_single(bond) for bond in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
+
+    # @singledispatchmethod
+    # def __call__(self, input: Bond) -> Int[Tensor, "d"]:
+    #     types = self._transform_single(input)
+
+    #     return torch.tensor(types) + self.offset

@@ -11,7 +11,7 @@ from mol_gnn.types import Mol, Rxn
 from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, CGRFeaturizer
 from mol_gnn.data.datasets.molecule import _MolGraphDatasetMixin
 from mol_gnn.data.datasets.mixins import _DatapointMixin
-from mol_gnn.utils.chem import make_mol
+from mol_gnn.transforms.chem import make_mol
 
 
 @dataclass
