@@ -4,7 +4,6 @@ from enum import StrEnum
 from typing import Iterable, Iterator, Self
 
 
-
 class EnumMapping(StrEnum):
     @classmethod
     def get(cls, name: str | Self) -> Self:
@@ -35,7 +34,7 @@ def pretty_shape(shape: Iterable[int]) -> str:
     """Make a pretty string from an input shape
 
     Example
-    --------
+    -------
     >>> X = np.random.rand(10, 4)
     >>> X.shape
     (10, 4)

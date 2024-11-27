@@ -5,11 +5,7 @@ from abc import abstractmethod
 import torch
 from torch import Tensor, nn
 
-from mol_gnn.conf import (
-    DEFAULT_ATOM_DIM,
-    DEFAULT_BOND_DIM,
-    DEFAULT_HIDDEN_DIM,
-)
+from mol_gnn.conf import DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM, DEFAULT_HIDDEN_DIM
 from mol_gnn.utils.registry import ClassRegistry
 
 
@@ -48,7 +44,7 @@ class OutputEmbedding(nn.Module):
         pass
 
     @abstractmethod
-    def forward(self,V: Tensor, M: Tensor, V_d: Tensor):
+    def forward(self, V: Tensor, M: Tensor, V_d: Tensor):
         pass
 
 
@@ -102,7 +98,7 @@ class AtomDescriptorEmbedding(LinearOutputEmbedding):
         )
         self.blocks.append(block)
 
-    def forward(self, V: Tensor, M: Tensor, V_d: Tensor):        
+    def forward(self, V: Tensor, M: Tensor, V_d: Tensor):
         try:
             H = self.blocks[0](torch.cat([V, M], dim=1))
             H = self.blocks[1](torch.cat([H, V_d], dim=1))

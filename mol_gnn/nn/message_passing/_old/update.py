@@ -22,7 +22,7 @@ class ResidualUpdate(UpdateFunction):
         input_dim: int = DEFAULT_HIDDEN_DIM,
         output_dim: int | None = None,
         bias: bool = True,
-        dropout: float = 0.0
+        dropout: float = 0.0,
     ):
         super().__init__()
         output_dim = output_dim if output_dim is not None else input_dim

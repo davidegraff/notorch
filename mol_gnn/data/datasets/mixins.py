@@ -40,7 +40,7 @@ class _DatapointMixin:
 
     @property
     def t(self) -> int:
-        """the number of targets"""
+        """The number of targets"""
         return len(self.y) if self.y is not None else 0
 
 
@@ -52,15 +52,15 @@ class _MolGraphDatasetMixin:
 
     def __len__(self) -> int:
         return len(self.data)
-        
+
     @cached_property
     def _Y(self) -> np.ndarray:
-        """the raw targets of the dataset"""
+        """The raw targets of the dataset"""
         return np.array([d.y for d in self.data], float)
 
     @property
     def Y(self) -> np.ndarray:
-        """the (scaled) targets of the dataset"""
+        """The (scaled) targets of the dataset"""
         return self.__Y
 
     @Y.setter
@@ -71,12 +71,12 @@ class _MolGraphDatasetMixin:
 
     @cached_property
     def _X_f(self) -> np.ndarray:
-        """the raw molecule features of the dataset"""
+        """The raw molecule features of the dataset"""
         return np.array([d.x_f for d in self.data])
 
     @property
     def X_f(self) -> np.ndarray:
-        """the (scaled) molecule features of the dataset"""
+        """The (scaled) molecule features of the dataset"""
         return self.__X_f
 
     @X_f.setter
@@ -103,14 +103,14 @@ class _MolGraphDatasetMixin:
 
     @property
     def d_xf(self) -> int:
-        """the extra molecule feature dimension, if any"""
+        """The extra molecule feature dimension, if any"""
         return 0 if np.equal(self.X_f, None).all() else self.X_f.shape[1]
 
     def normalize_targets(self, scaler: StandardScaler | None = None) -> StandardScaler:
         """Normalizes the targets of this dataset using a :obj:`StandardScaler`
 
         The :obj:`StandardScaler` subtracts the mean and divides by the standard deviation for
-        each task independently. 
+        each task independently.
 
         .. note::
             This should only be used for regression datasets.
@@ -144,7 +144,8 @@ class _MolGraphDatasetMixin:
 
     def reset(self):
         """Reset the {atom, bond, molecule} features and targets of each datapoint to its
-        initial, unnormalized values."""
+        initial, unnormalized values.
+        """
         self.__Y = self._Y
         self.__X_f = self._X_f
 
@@ -154,4 +155,3 @@ class _MolGraphDatasetMixin:
                 f"number of molecules ({len(self.data)}) and {label} ({len(X)}) "
                 "must have same length!"
             )
-        

@@ -6,10 +6,8 @@ from torch import Tensor, nn
 from torch_scatter import scatter_max, scatter_mean, scatter_sum, scatter_softmax
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
-from mol_gnn.nn.layers import MultiPermutation, Permutation
-from mol_gnn.utils import HasHParams
+from mol_gnn.nn.layers import MultiPermutation
 from mol_gnn.utils.registry import ClassRegistry
-
 
 
 class Aggregation(nn.Module):
@@ -17,8 +15,10 @@ class Aggregation(nn.Module):
     def forward(
         self, M: Tensor, dest: Tensor, dim_size: int | None, **kwargs
     ) -> tuple[Tensor, Tensor]:
-        """aggregate the messages at each node and return the aggregated message along with the weight
-        assigned to each message during aggregation"""
+        """
+        Aggregate the messages at each node and return the aggregated message along with the
+        weight assigned to each message during aggregation.
+        """
 
 
 AggregationRegistry = ClassRegistry[Aggregation]()
@@ -56,7 +56,7 @@ class Max(Aggregation):
 
 class _AttentiveAggBase(Aggregation):
     def forward(self, M: Tensor, dest: Tensor, dim_size: int | None, **kwargs) -> Tensor:
-        """forward the messages at each node in the graph"""
+        """Forward the messages at each node in the graph"""
         alpha = self._calc_weights(M, dest, **kwargs)
 
         return scatter_sum(alpha * M, dest, dim=0, dim_size=dim_size), alpha
@@ -127,8 +127,7 @@ class GatedAttention(_AttentiveAggBase):
 
 
 class MLP(Aggregation):
-    """
-    References
+    """References
     ----------
     .. [1] arXiv:2211.04952v1 [cs.LG]. https://arxiv.org/pdf/2211.04952.pdf
     """
@@ -203,7 +202,7 @@ class CompositeAggregation(Aggregation):
 
     @property
     def mult(self) -> int:
-        """the multiplier to apply to the output dimension"""
+        """The multiplier to apply to the output dimension"""
         return len(self.aggs)
 
     def forward(self, M: Tensor, dest: Tensor, dim_size: int | None, **kwargs) -> Tensor:
@@ -220,7 +219,7 @@ class MessageAggregation(nn.Module):
 
     @property
     def mult(self) -> int:
-        """the multiplier to apply to the output dimension"""
+        """The multiplier to apply to the output dimension"""
         return 1
 
     @abstractmethod

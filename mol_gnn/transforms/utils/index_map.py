@@ -8,8 +8,7 @@ T = TypeVar("T")
 
 
 class IndexMap[KT](Mapping[KT, int]):
-    """
-    A :class:`IndexMap` is the logical inverse of a :class:`list`. That is, a
+    """A :class:`IndexMap` is the logical inverse of a :class:`list`. That is, a
     list is a mapping from integer index to the respective item. In contrast,
     an ``IndexMap`` is a mapping from an item to its index in the corresponding
     list.
@@ -41,8 +40,7 @@ class IndexMap[KT](Mapping[KT, int]):
 
 
 class IndexMapWithUnknown(IndexMap[KT]):
-    """
-    A :class:`IndexMapWithUnknown` is like a :class:`IndexMap`, with the only
+    """A :class:`IndexMapWithUnknown` is like a :class:`IndexMap`, with the only
     difference being that querying the map for an unknown item will always
     return padding index, i.e., the number of items in the map.
     """

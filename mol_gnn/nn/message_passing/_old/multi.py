@@ -10,6 +10,7 @@ class MultiInputMessagePassing(nn.Module):
     a multicomponent input then concatenates the representation of each input to construct a
     global representation
     """
+
     convs: list[MessagePassing]
 
     def __init__(self, convs: Iterable[MessagePassing]):
@@ -26,7 +27,7 @@ class MultiInputMessagePassing(nn.Module):
     def shared(self) -> bool:
         """Whether the same message passing block is shared among all components"""
         return all([b_i is b_j for b_i, b_j in zip(self.convs[:-1], self.convs[1:])])
-    
+
     @property
     def output_dim(self) -> int:
         return sum(conv.output_dim for conv in self.convs)
@@ -56,7 +57,7 @@ class MultiInputMessagePassing(nn.Module):
             the message-passing block to share among all components
         n_components : int
             the number of components in each input
-        
+
         Returns
         -------
         MultiInputMessagePassing

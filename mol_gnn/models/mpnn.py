@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import astuple
 
 from typing import Iterable
 
@@ -7,11 +6,9 @@ from lightning import pytorch as pl
 import torch
 from torch import nn, Tensor, optim
 
-from mol_gnn.data import MpnnBatch
 from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.data.models.batch import MpnnBatch
-from mol_gnn.data.models.graph import BatchedGraph
-from mol_gnn.nn import Aggregation, MessagePassing, Predictor, LossFunction
+from mol_gnn.nn import Predictor, LossFunction
 from mol_gnn.nn.encoder import GraphEncoder
 from mol_gnn.nn.metrics import Metric
 from mol_gnn.schedulers import NoamLR
@@ -121,7 +118,7 @@ class MPNN(pl.LightningModule):
     def fingerprint(
         self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
-        """the learned fingerprints for the input molecules"""
+        """The learned fingerprints for the input molecules"""
         H = self.encoder(G, V_d, len(G))
         H = self.bn(H)
 
@@ -130,7 +127,7 @@ class MPNN(pl.LightningModule):
     def encoding(
         self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
-        """the final hidden representations for the input molecules"""
+        """The final hidden representations for the input molecules"""
         return self.predictor[:-1](self.fingerprint(G, V_d, X_f))
 
     def forward(

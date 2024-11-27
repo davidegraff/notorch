@@ -34,7 +34,7 @@ class NodeAggregation(MessageAggregation):
 
 class EdgeAggregation(MessageAggregation):
     def forward(
-        self, M: Tensor, edge_index: Tensor, dim_size: int | None, rev_index: Tensor, 
+        self, M: Tensor, edge_index: Tensor, dim_size: int | None, rev_index: Tensor
     ) -> Tensor:
         src, dest = edge_index
 
@@ -46,7 +46,7 @@ class EdgeAggregation(MessageAggregation):
 
 class DirectedEdgeAggregation(MessageAggregation):
     def forward(
-        self, M: Tensor, edge_index: Tensor, dim_size: int | None, rev_index: Tensor,
+        self, M: Tensor, edge_index: Tensor, dim_size: int | None, rev_index: Tensor
     ) -> Tensor:
         src, dest = edge_index
 

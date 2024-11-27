@@ -60,6 +60,7 @@ class CondensedReactionGraphFeaturizer:
         Representations of the Condensed Graph of Reaction." J. Chem. Inf. Model. 2022, 62,
         2101-2110. https://doi.org/10.1021/acs.jcim.1c00975
     """
+
     atom_transform: TensorTransform[Atom]
     bond_transform: TensorTransform[Bond]
     mode_: InitVar[str | RxnMode] = RxnMode.REAC_DIFF
@@ -137,9 +138,11 @@ class CondensedReactionGraphFeaturizer:
             # (2) regular features for each atom only in the products
             X_v_p1 = np.array(
                 [
-                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[i]))
-                    if (i := a.GetIdx()) not in reac_idxs
-                    else self.atom_transform.num_only(a)
+                    (
+                        self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[i]))
+                        if (i := a.GetIdx()) not in reac_idxs
+                        else self.atom_transform.num_only(a)
+                    )
                     for a in rct.GetAtoms()
                 ]
             )
@@ -156,9 +159,11 @@ class CondensedReactionGraphFeaturizer:
             # (2) regular features for each atom only in the products
             X_v_p1 = np.array(
                 [
-                    self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
-                    if a.GetIdx() not in reac_idxs
-                    else self.atom_transform(a)
+                    (
+                        self.atom_transform(pdt.GetAtomWithIdx(r2p_idx_map[a.GetIdx()]))
+                        if a.GetIdx() not in reac_idxs
+                        else self.atom_transform(a)
+                    )
                     for a in rct.GetAtoms()
                 ]
             )
@@ -241,9 +246,7 @@ class CondensedReactionGraphFeaturizer:
         return x_e
 
     @classmethod
-    def map_reac_to_prod(
-        cls, reacs: Mol, pdts: Mol
-    ) -> tuple[dict[int, int], list[int], list[int]]:
+    def map_reac_to_prod(cls, reacs: Mol, pdts: Mol) -> tuple[dict[int, int], list[int], list[int]]:
         """Map atom indices between corresponding atoms in the reactant and product molecules
 
         Parameters

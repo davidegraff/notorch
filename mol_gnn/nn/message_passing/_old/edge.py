@@ -16,7 +16,7 @@ def calc_rev_index(edge_index: Tensor) -> Tensor:
 
     return torch.where(rev_mask)[1]
 
-    
+
 class EdgeMessagePassing(MessagePassing):
     def __init__(
         self,

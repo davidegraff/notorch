@@ -10,7 +10,8 @@ class MessageFunction(nn.Module):
     @abstractmethod
     def forward(self, H: Tensor, V: Tensor, E: Tensor) -> Tensor:
         """Calculate the message for each edge given its current hidden state"""
-    
+
+
 MessageFunctionRegistry = ClassRegistry[MessageFunction]()
 
 

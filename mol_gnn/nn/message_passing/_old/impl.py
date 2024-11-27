@@ -44,12 +44,7 @@ class ComposableMessagePassing(MessagePassing):
         return self.out_embed.output_dim
 
     def forward(
-        self,
-        V: Tensor,
-        E: Tensor,
-        edge_index: Tensor,
-        rev_index: Tensor | None,
-        V_d: Tensor | None,
+        self, V: Tensor, E: Tensor, edge_index: Tensor, rev_index: Tensor | None, V_d: Tensor | None
     ) -> Tensor:
         """Encode a batch of molecular graphs.
 

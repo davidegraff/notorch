@@ -175,7 +175,7 @@ class BatchedGraph(Graph):
     #     Vs = self.V.split_with_sizes(split_sizes)
 
     def __len__(self) -> int:
-        """the number of individual :class:`Graph`s in this batch"""
+        """The number of individual :class:`Graph`s in this batch"""
         return self.__size
 
     def to(self, device: Device) -> Self:

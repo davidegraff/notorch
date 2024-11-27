@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from collections.abc import Iterable, Sequence, Sized
+from collections.abc import Iterable, Sequence
 from functools import singledispatchmethod
 
 from jaxtyping import Int
@@ -12,10 +11,7 @@ from torch import Tensor
 from torch.nn import functional as F
 
 from mol_gnn.transforms.base import TensorTransform
-from mol_gnn.transforms.utils.index_map import (
-    build,
-    IndexMapWithUnknown,
-)
+from mol_gnn.transforms.utils.index_map import build, IndexMapWithUnknown
 
 PADDING_INDEX = 0
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
