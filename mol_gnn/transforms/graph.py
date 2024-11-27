@@ -1,19 +1,26 @@
 from dataclasses import dataclass, field
+from typing import Iterable
 
+from jaxtyping import Int
 import numpy as np
 import torch
+from torch import Tensor
 
 from mol_gnn.data.models.graph import Graph
 from mol_gnn.transforms.atom import MultiTypeAtomTransform
-from mol_gnn.transforms.base import Transform, TensorTransform
+from mol_gnn.transforms.base import Transform
 from mol_gnn.transforms.bond import MultiTypeBondTransform
 from mol_gnn.types import Atom, Bond, Mol
 
 
 @dataclass
 class MolToGraph(Transform[Mol, Graph]):
-    atom_transform: TensorTransform[Atom] = field(default_factory=MultiTypeAtomTransform)
-    bond_transform: TensorTransform[Bond] = field(default_factory=MultiTypeBondTransform)
+    atom_transform: Transform[Iterable[Atom], Int[Tensor, "V t_v"]] = field(
+        default_factory=MultiTypeAtomTransform
+    )
+    bond_transform: Transform[Iterable[Bond], Int[Tensor, "E t_e"]] = field(
+        default_factory=MultiTypeBondTransform
+    )
 
     @property
     def node_dim(self) -> int:

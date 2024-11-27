@@ -20,7 +20,7 @@ class Transform[S, T]:
 
 
 class TensorTransform[S](Sized, Transform[S, Num[Tensor, "*n d"]]):
-    """A :class:`VectorFeaturizer` transforms inputs into tensors."""
+    """A :class:`TensorTransform` transforms inputs into tensors."""
 
     @abstractmethod
     def __call__(self, input: S | Iterable[S]) -> Num[Tensor, "*n d"]:
