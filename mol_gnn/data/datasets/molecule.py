@@ -28,7 +28,8 @@ class _MoleculeDatapointMixin:
 @dataclass
 class MoleculeDatapoint(_DatapointMixin, _MoleculeDatapointMixin):
     """A :class:`MoleculeDatapoint` contains a single molecule and its associated features and
-    targets."""
+    targets.
+    """
 
     V_f: np.ndarray | None = None
     """a numpy array of shape ``V x d_vf``, where ``V`` is the number of atoms in the molecule, and
@@ -88,39 +89,39 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
 
     @property
     def smiles(self) -> list[str]:
-        """the SMILES strings associated with the dataset"""
+        """The SMILES strings associated with the dataset"""
         return [Chem.MolToSmiles(d.mol) for d in self.data]
 
     @property
     def mols(self) -> list[Chem.Mol]:
-        """the molecules associated with the dataset"""
+        """The molecules associated with the dataset"""
         return [d.mol for d in self.data]
 
     @property
     def _V_fs(self) -> np.ndarray:
-        """the raw atom features of the dataset"""
+        """The raw atom features of the dataset"""
         return np.array([d.V_f for d in self.data])
 
     @property
     def V_fs(self) -> np.ndarray:
-        """the (scaled) atom descriptors of the dataset"""
+        """The (scaled) atom descriptors of the dataset"""
         return self.__V_fs
 
     @V_fs.setter
     def V_fs(self, V_fs: np.ndarray):
-        """the (scaled) atom features of the dataset"""
+        """The (scaled) atom features of the dataset"""
         self._validate_attribute(V_fs, "atom features")
 
         self.__V_fs = np.array(V_fs)
 
     @property
     def _E_fs(self) -> np.ndarray:
-        """the raw bond features of the dataset"""
+        """The raw bond features of the dataset"""
         return np.array([d.E_f for d in self.data])
 
     @property
     def E_fs(self) -> np.ndarray:
-        """the (scaled) bond features of the dataset"""
+        """The (scaled) bond features of the dataset"""
         return self.__E_fs
 
     @E_fs.setter
@@ -131,12 +132,12 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
 
     @property
     def _V_ds(self) -> np.ndarray:
-        """the raw atom descriptors of the dataset"""
+        """The raw atom descriptors of the dataset"""
         return np.array([d.V_d for d in self.data])
 
     @property
     def V_ds(self) -> np.ndarray:
-        """the (scaled) atom descriptors of the dataset"""
+        """The (scaled) atom descriptors of the dataset"""
         return self.__V_ds
 
     @V_ds.setter
@@ -147,17 +148,17 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
 
     @property
     def d_vf(self) -> int:
-        """the extra atom feature dimension, if any"""
+        """The extra atom feature dimension, if any"""
         return 0 if np.equal(self.V_fs, None).all() else self.V_fs[0].shape[1]
 
     @property
     def d_ef(self) -> int:
-        """the extra bond feature dimension, if any"""
+        """The extra bond feature dimension, if any"""
         return 0 if np.equal(self.E_fs, None).all() else self.E_fs[0].shape[1]
 
     @property
     def d_vd(self) -> int:
-        """the extra atom descriptor dimension, if any"""
+        """The extra atom descriptor dimension, if any"""
         return 0 if np.equal(self.V_ds, None).all() else self.V_ds[0].shape[1]
 
     def normalize_inputs(
@@ -200,8 +201,9 @@ class MoleculeDataset(_MolGraphDatasetMixin, Dataset):
         return scaler
 
     def reset(self):
-        """reset the {atom, bond, molecule} features and targets of each datapoint to its raw
-        value"""
+        """Reset the {atom, bond, molecule} features and targets of each datapoint to its raw
+        value
+        """
         super().reset()
 
         self.__V_fs = self._V_fs

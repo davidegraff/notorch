@@ -34,7 +34,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "black>=24.10.0",
     "flake8>=7.1.1",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
@@ -47,12 +46,12 @@ torch-scatter = { url = "https://data.pyg.org/whl/torch-2.5.0%2Bcpu/torch_scatte
 [tool.black]
 line-length = 100
 target-version = ["py312"]
-skip-magic-trailing-comma = true
 
 [tool.ruff]
 line-length = 100
 
 [tool.ruff.lint]
+select = ["E", "F", "W"]
 ignore = ["E741", "F403", "F405", "F722", "F821"]
 exclude = ["**/_old/*.py", "**/_*.py"]
 
@@ -60,6 +59,7 @@ exclude = ["**/_old/*.py", "**/_*.py"]
 "__init__.py" = ["F401"]
 
 [tool.ruff.format]
+skip-magic-trailing-comma = true
 
 [tool.pytest.ini_options]
 addopts = "--cov mol_gnn"

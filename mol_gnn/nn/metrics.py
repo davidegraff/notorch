@@ -35,7 +35,8 @@ __all__ = [
 
 class Metric(LossFunction):
     """A :class:`Metric` is a :class:`~mol_gnn.nn.LossFunction` that may be
-    non-differentiable"""
+    non-differentiable
+    """
 
     minimize: bool = True
 

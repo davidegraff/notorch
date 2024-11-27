@@ -2,14 +2,15 @@ from rdkit import Chem
 
 
 def make_mol(smi: str, keep_h: bool, add_h: bool) -> Chem.Mol:
-    """build an RDKit molecule from a SMILES string.
+    """Build an RDKit molecule from a SMILES string.
 
     Parameters
     ----------
     smi : str
         a SMILES string.
     keep_h : bool
-        whether to keep hydrogens in the input smiles. This does not add hydrogens, it only keeps them if they are specified
+        whether to keep hydrogens in the input smiles. This does not add
+        hydrogens, it only keeps them if they are specified
     add_h : bool
         whether to add hydrogens to the molecule
 

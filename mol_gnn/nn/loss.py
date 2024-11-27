@@ -29,7 +29,10 @@ __all__ = [
 
 
 class LossFunction(ABC, ReprMixin):
-    """A :class:`LossFunction` calculates the fully reduced loss function given both a prediction and a target tensor"""
+    """
+    A :class:`LossFunction` calculates the fully reduced loss function given
+    both a prediction and a target tensor.
+    """
 
     def __call__(
         self,

@@ -38,7 +38,8 @@ class _ReactionDatapointMixin:
                 rct_smi, pdt_smi = rxn_or_smis
             case _:
                 raise TypeError(
-                    "Must provide either a reaction SMARTS string or a tuple of reactant and product SMILES strings!"
+                    "Must provide either a reaction SMARTS string or a tuple of "
+                    "reactant and product SMILES strings!"
                 )
 
         rct = make_mol(rct_smi, keep_h, add_h)
@@ -49,7 +50,10 @@ class _ReactionDatapointMixin:
 
 @dataclass
 class ReactionDatapoint(_DatapointMixin, _ReactionDatapointMixin):
-    """A :class:`ReactionDatapoint` contains a single reaction and its associated features and targets."""
+    """
+    A :class:`ReactionDatapoint` contains a single reaction and its associated features and
+    targets.
+    """
 
     def __post_init__(self, mfs: list[VectorFeaturizer[Mol]] | None):
         if self.rct is None:

@@ -118,7 +118,7 @@ class MPNN(pl.LightningModule):
     def fingerprint(
         self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
-        """the learned fingerprints for the input molecules"""
+        """The learned fingerprints for the input molecules"""
         H = self.encoder(G, V_d, len(G))
         H = self.bn(H)
 
@@ -127,7 +127,7 @@ class MPNN(pl.LightningModule):
     def encoding(
         self, G: BatchedGraph, V_d: Tensor | None = None, X_f: Tensor | None = None
     ) -> Tensor:
-        """the final hidden representations for the input molecules"""
+        """The final hidden representations for the input molecules"""
         return self.predictor[:-1](self.fingerprint(G, V_d, X_f))
 
     def forward(

@@ -32,7 +32,7 @@ class NoamLR(LRScheduler):
 
 
     Parameters
-    -----------
+    ----------
     optimizer : Optimizer
         A PyTorch optimizer.
     warmup_epochs : ArrayLike
@@ -107,7 +107,7 @@ class NoamLR(LRScheduler):
         super(NoamLR, self).__init__(optimizer)
 
     def __len__(self) -> int:
-        """the number of steps in the learning rate schedule"""
+        """The number of steps in the learning rate schedule"""
         return self.scheds.shape[1]
 
     def get_lr(self) -> np.ndarray:
