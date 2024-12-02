@@ -19,7 +19,7 @@ from mol_gnn.data import MoleculeDataset
 warnings.filterwarnings("ignore", module=r"lightning.*", append=True)
 
 
-@pytest.fixture(params=[agg.Sum(), agg.GatedAttention()])
+@pytest.fixture(params=[agg.Sum(), agg.Gated()])
 def aggr(request):
     return request.param
 

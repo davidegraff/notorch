@@ -18,7 +18,7 @@ class Graph:
     edge_index: Int[Tensor, "2 E"]
     """a tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
     rev_index: Int[Tensor, "E"]
-    """a tensor of shape ``|E|`` that maps from an edge index to the index of the source of the
+    """a tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
 
     @property
