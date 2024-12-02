@@ -1,7 +1,13 @@
 from torch import nn
 
-
-class MLP(nn.Sequential):
+def MLP(
+    input_dim: int,
+    output_dim: int,
+    hidden_dim: int = 300,
+    n_layers: int = 1,
+    dropout: float = 0.0,
+    activation: type[nn.Module] = nn.ReLU(),
+) -> nn.Sequential:
     r"""An :class:`MLP` is an FFN that implements the following function:
 
     .. math::
@@ -17,22 +23,11 @@ class MLP(nn.Sequential):
     :math:`\sigma` is the activation function, and :math:`L` is the number of layers.
     """
 
-    def __init__(
-        self,
-        input_dim: int,
-        output_dim: int,
-        hidden_dim: int = 300,
-        n_layers: int = 1,
-        dropout: float = 0.0,
-        activation: type[nn.Module] = nn.ReLU(),
-    ):
-        super().__init__()
+    dropout = nn.Dropout(dropout)
+    act = activation()
 
-        dropout = nn.Dropout(dropout)
-        act = activation()
+    dims = [input_dim] + [hidden_dim] * n_layers + [output_dim]
+    blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
+    layers = sum(blocks, [])
 
-        dims = [input_dim] + [hidden_dim] * n_layers + [output_dim]
-        blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
-        layers = sum(blocks, [])
-
-        super().__init__(*layers[1:-1])
+    return nn.Sequential(*layers[1:-1])
