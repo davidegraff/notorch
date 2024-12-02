@@ -1,8 +1,5 @@
 """Global configuration variables for mol_gnn"""
 
-from mol_gnn.featurizers.graph.molecule import MolGraphFeaturizer
-
-
 DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM = MolGraphFeaturizer().shape
 DEFAULT_HIDDEN_DIM = 256
 DEFAULT_OUTPUT_DIM = DEFAULT_HIDDEN_DIM
