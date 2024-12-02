@@ -1,5 +1,6 @@
 from torch import nn
 
+
 def MLP(
     input_dim: int,
     output_dim: int,

@@ -2,6 +2,7 @@ from jaxtyping import ArrayLike, Bool, Float
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
+
 from mol_gnn.utils import ClassRegistry
 
 
@@ -66,7 +67,6 @@ class MSELoss(_LossFunctionBase):
         L = F.mse_loss(preds, targets, reduction="none")
 
         return self._reduce(L, mask, sample_weights)
-
 
 
 @LossFunctionRegistry.register("bounded-mse")
