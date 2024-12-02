@@ -42,7 +42,7 @@ class ChempropLayer(nn.Module):
         return f"(reduce): {self.reduce}"
 
 
-class ChempropEncoder(nn.Module):
+class ChempropBlock(nn.Module):
     layers: list[Residual[ChempropLayer]]
 
     def __init__(

@@ -31,6 +31,7 @@ dependencies = [
     "torch-scatter",
     "torch>=2.5.0",
     "tensordict>=0.6.2",
+    "torchmetrics>=1.6.0",
 ]
 
 [dependency-groups]
@@ -41,6 +42,9 @@ dev = [
     "pytest-cov>=6.0.0",
     "ruff>=0.8.0",
 ]
+
+[tool.uv]
+native-tls = true
 
 [tool.uv.sources]
 torch-scatter = { url = "https://data.pyg.org/whl/torch-2.5.0%2Bcpu/torch_scatter-2.1.2-cp312-cp312-macosx_10_13_universal2.whl", marker = "sys_platform == 'darwin'" }

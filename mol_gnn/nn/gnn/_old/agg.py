@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 from torch import Tensor, nn
 
-from mol_gnn.nn.agg import Aggregation
+from mol_gnn.nn.gnn.agg import Aggregation
 
 
 class MessageAggregation(nn.Module):

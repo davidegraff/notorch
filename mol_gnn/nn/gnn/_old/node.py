@@ -2,8 +2,8 @@ import torch
 from torch import Tensor, nn
 from mol_gnn.data.models.graph import BatchedGraph
 
-from mol_gnn.nn.agg import Aggregation
-from mol_gnn.nn.message_passing.agg import DirectedEdgeAggregation, EdgeAggregation, NodeAggregation
+from mol_gnn.nn.gnn.agg import Aggregation, NodeAggregation
+from mol_gnn.nn.message_passing.agg import NodeAggregation
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction
 from mol_gnn.nn.message_passing.base import MessagePassing
@@ -17,7 +17,7 @@ def calc_rev_index(edge_index: Tensor) -> Tensor:
     return torch.where(rev_mask)[1]
 
 
-class EdgeMessagePassing(MessagePassing):
+class NodeMessagePassing(MessagePassing):
     def __init__(
         self,
         embed: InputEmbedding | None,
@@ -27,25 +27,26 @@ class EdgeMessagePassing(MessagePassing):
         out_embed: OutputEmbedding,
         act: nn.Module,
         depth: int,
-        directed: bool,
     ):
         super().__init__()
 
-        self.embed = embed or InputEmbedding.edge()
+        self.embed = embed or InputEmbedding.node()
         self.message = message
-        self.edge_agg = DirectedEdgeAggregation(agg) if directed else EdgeAggregation(agg)
+        self.agg = NodeAggregation(agg)
         self.update = update
-        self.node_agg = NodeAggregation(agg)
         self.out_embed = out_embed
+
         self.act = act
         self.depth = depth
+
+        self.hparams = dict()
 
     @property
     def output_dim(self) -> int:
         return self.out_embed.output_dim
 
     def forward(self, G: BatchedGraph, V_d: Tensor | None) -> Tensor:
-        """Encode a batch of graphs.
+        """Encode a batch of molecular graphs.
 
         Parameters
         ----------
@@ -73,13 +74,13 @@ class EdgeMessagePassing(MessagePassing):
         rev_index = calc_rev_index(edge_index) if rev_index is None else rev_index
         dim_size = len(V)
 
-        H_0 = self.embed(torch.cat([V[src], E], dim=1))
+        H_0 = self.embed(V)
 
         H = self.act(H_0)
         for _ in range(1, self.depth):
-            M = self.message(H, V[src], E)
-            M = self.edge_agg(M, edge_index, dim_size, rev_index=rev_index)
+            M_e = self.message(V[src], E, H[src])
+            M = self.agg(M_e, edge_index, dim_size, rev_index)
             H = self.update(H, M, H_0)
-        H_v = self.node_agg(H, edge_index, dim_size, rev_index=rev_index)
+        M = self.agg(H, dest, dim_size, rev_index=rev_index)
 
-        return self.out_embed(H_v, V, V_d)
+        return self.out_embed(V, M, V_d)

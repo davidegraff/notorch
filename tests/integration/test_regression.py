@@ -12,14 +12,14 @@ import torch
 from torch.utils.data import DataLoader
 
 from mol_gnn import models, nn
-from mol_gnn.nn import agg
+from mol_gnn.nn.gnn import agg
 from mol_gnn.nn.message_passing import edge, embed, message, update
 from mol_gnn.data import MoleculeDataset
 
 warnings.filterwarnings("ignore", module=r"lightning.*", append=True)
 
 
-@pytest.fixture(params=[agg.Sum(), agg.GatedAttention()])
+@pytest.fixture(params=[agg.Sum(), agg.Gated()])
 def aggr(request):
     return request.param
 
