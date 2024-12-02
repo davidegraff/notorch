@@ -2,7 +2,7 @@ import torch
 from torch import Tensor, nn
 from mol_gnn.data.models.graph import BatchedGraph
 
-from mol_gnn.nn.agg import Aggregation, NodeAggregation
+from mol_gnn.nn.gnn.agg import Aggregation, NodeAggregation
 from mol_gnn.nn.message_passing.agg import NodeAggregation
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction

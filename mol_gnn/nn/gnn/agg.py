@@ -6,19 +6,10 @@ from torch import Tensor, nn
 from torch_scatter import scatter_max, scatter_mean, scatter_sum, scatter_softmax
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
+from mol_gnn.nn.gnn.base import Aggregation
 from mol_gnn.nn.layers import MultiPermutation
 from mol_gnn.utils.registry import ClassRegistry
 
-
-class Aggregation(nn.Module):
-    @abstractmethod
-    def forward(
-        self, M: Tensor, dest: Tensor, dim_size: int | None, **kwargs
-    ) -> tuple[Tensor, Tensor]:
-        """
-        Aggregate the messages at each node and return the aggregated message along with the
-        weight assigned to each message during aggregation.
-        """
 
 
 AggregationRegistry = ClassRegistry[Aggregation]()
