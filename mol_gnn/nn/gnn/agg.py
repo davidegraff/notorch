@@ -70,9 +70,9 @@ class SDPAttention(Aggregation):
         self.sqrt_key_dim = sqrt(key_dim)
 
     def forward(
-        self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], K: Float[Tensor, "b d_v"], **kwargs
+        self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], Q: Float[Tensor, "b d_v"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        scores = torch.einsum("V d_v, V d_v -> V", G.V, K[G.batch_node_index]) / self.sqrt_key_dim
+        scores = torch.einsum("V d_v, V d_v -> V", Q[G.batch_node_index], G.V) / self.sqrt_key_dim
         alpha = scatter_softmax(scores, G.batch_node_index, dim=0, dim_size=len(G)).unsqueeze(1)
         H = scatter_sum(alpha * G.V, G.batch_node_index, dim=0, dim_size=len(G))
 
