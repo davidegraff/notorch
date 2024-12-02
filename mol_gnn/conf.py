@@ -4,7 +4,7 @@ from mol_gnn.featurizers.graph.molecule import MolGraphFeaturizer
 
 
 DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM = MolGraphFeaturizer().shape
-DEFAULT_HIDDEN_DIM = 300
+DEFAULT_HIDDEN_DIM = 256
 DEFAULT_OUTPUT_DIM = DEFAULT_HIDDEN_DIM
 
 DEFAULT_ATOM_HIDDEN = 2 * DEFAULT_ATOM_DIM
