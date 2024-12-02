@@ -15,5 +15,7 @@ class GNNLayer(nn.Module):
 
 class Aggregation(nn.Module):
     @abstractmethod
-    def forward(self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"]) -> Float[Tensor, "b d_v"]:
+    def forward(
+        self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
+    ) -> Float[Tensor, "b d_v"]:
         pass

@@ -129,9 +129,11 @@ class BatchedGraph(Graph):
     """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
 
     batch_node_index: Int[Tensor, "V"]
-    """the index of the parent :class:`Graph` of each node the batched graph"""
+    """A tensor of shape ``V`` containing the index of the parent :class:`Graph` of each node the
+    batched graph."""
     batch_edge_index: Int[Tensor, "E"]
-    """the index of the parent :class:`Graph` of each edge the batched graph"""
+    """A tensor of shape ``E`` containing the index of the parent :class:`Graph` of each edge the
+    batched graph."""
     size: InitVar[int] | None = None
     """The number of graphs, if known. Otherwise, will be estimated via
     :code:`batch_node_index.max() + 1`"""
