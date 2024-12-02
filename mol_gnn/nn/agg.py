@@ -81,35 +81,6 @@ class _AttentiveAggBase(Aggregation):
         """
 
 
-@AggregationRegistry.register("gatv2")
-class GATv2(_AttentiveAggBase):
-    """something resemembling GATv2 but not quite"""
-
-    def __init__(
-        self,
-        input_dim: int = DEFAULT_HIDDEN_DIM,
-        output_dim: int | None = None,
-        slope: float = 0.2,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-
-        # self.hparams.update({"input_dim": input_dim, "output_dim": output_dim, "slope": slope})
-
-        output_dim = input_dim if output_dim is None else output_dim
-
-        self.W_0 = nn.Linear(input_dim, output_dim)
-        self.W_1 = nn.Linear(input_dim, output_dim)
-        self.act = nn.LeakyReLU(slope)
-        self.a = nn.Linear(output_dim, 1)
-
-    def _calc_weights(self, M: Tensor, dest: Tensor, rev_index: Tensor) -> Tensor:
-        Z = self.act(self.W_0(M) + self.W_1(M[rev_index]))
-        scores = self.a(Z)
-
-        return scatter_softmax(scores, dest, dim=0)
-
-
 @AggregationRegistry.register("gated")
 class GatedAttention(_AttentiveAggBase):
     """A learnable aggregation gate"""
