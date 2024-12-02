@@ -1,10 +1,24 @@
-from abc import abstractmethod
-
 from jaxtyping import ArrayLike, Bool, Float
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
 from mol_gnn.utils import ClassRegistry
+
+
+class _BoundedMixin:
+    def forward(
+        self,
+        preds: Float[Tensor, "b t"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+        lt_mask: Bool[Tensor, "b t"],
+        gt_mask: Bool[Tensor, "b t"],
+    ) -> Float[Tensor, ""]:
+        preds = torch.where((preds < targets) & lt_mask, targets, preds)
+        preds = torch.where((preds > targets) & gt_mask, targets, preds)
+
+        return super().forward(preds, targets, mask, sample_weights)
 
 
 class _LossFunctionBase(nn.Module):
@@ -16,44 +30,6 @@ class _LossFunctionBase(nn.Module):
         self.task_weights = self.register_buffer(
             "task_weights", torch.as_tensor(task_weights).unsqueeze(0)
         )
-
-    def __call__(
-        self,
-        Y_hat: Tensor,
-        Y: Tensor,
-        mask: Tensor,
-        sample_weights: Tensor,
-        task_weights: Tensor,
-        lt_mask: Tensor,
-        gt_mask: Tensor,
-    ):
-        """Calculate the *fully reduced* loss value
-
-        Parameters
-        ----------
-        Y_hat : Tensor
-            a tensor of shape `b x t x *` containing the predictions
-        Y : Tensor
-            a tensor of shape `b x t` containing the target values
-        mask : Tensor
-            a boolean tensor of shape `b x t` indicating whether the given prediction should be
-            included in the loss calculation
-        sample_weights : Tensor
-            a tensor of shape `b` or `b x 1` containing the per-sample weight
-        task_weights : Tensor
-            a tensor of shape `t` or `1 x t` containing the per-task weight
-        lt_mask: Tensor
-        gt_mask: Tensor
-
-        Returns
-        -------
-        Tensor
-            a scalar containing the fully reduced loss
-        """
-        L = self._forward_unreduced(Y_hat, Y, mask, sample_weights, task_weights, lt_mask, gt_mask)
-        L = L * sample_weights.view(-1, 1) * task_weights.view(1, -1) * mask
-
-        return L.sum() / mask.sum()
 
     def _reduce(
         self,
@@ -82,31 +58,20 @@ class MSELoss(_LossFunctionBase):
 
     def forward(
         self,
-        inputs: Float[Tensor, "b t"],
+        preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
-        L = F.mse_loss(inputs, targets, reduction="none")
+        L = F.mse_loss(preds, targets, reduction="none")
 
         return self._reduce(L, mask, sample_weights)
 
 
-@LossFunctionRegistry.register("bounded-mse")
-class BoundedMSELoss(MSELoss):
-    def forward(
-        self,
-        inputs: Float[Tensor, "b t"],
-        targets: Float[Tensor, "b t"],
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
-        lt_mask: Bool[Tensor, "b t"],
-        gt_mask: Bool[Tensor, "b t"],
-    ) -> Float[Tensor, ""]:
-        inputs = torch.where((inputs < targets) & lt_mask, targets, inputs)
-        inputs = torch.where((inputs > targets) & gt_mask, targets, inputs)
 
-        return super().forward(inputs, targets, mask, sample_weights)
+@LossFunctionRegistry.register("bounded-mse")
+class BoundedMSELoss(_BoundedMixin, MSELoss):
+    pass
 
 
 @LossFunctionRegistry.register("mve")
@@ -122,12 +87,12 @@ class MVELoss(_LossFunctionBase):
 
     def forward(
         self,
-        inputs: Float[Tensor, "b t 2"],
+        preds: Float[Tensor, "b t 2"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Tensor:
-        mean, var = torch.unbind(inputs, dim=-1)
+        mean, var = torch.unbind(preds, dim=-1)
 
         L_nll = (mean - targets) ** 2 / (2 * var)
         L_kl = (2 * torch.pi * var).log() / 2
@@ -155,12 +120,12 @@ class EvidentialLoss(_LossFunctionBase):
 
     def forward(
         self,
-        inputs: Float[Tensor, "b t 4"],
+        preds: Float[Tensor, "b t 4"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Tensor:
-        mean, v, alpha, beta = torch.unbind(inputs, dim=-1)
+        mean, v, alpha, beta = torch.unbind(preds, dim=-1)
 
         residuals = targets - mean
         twoBlambda = 2 * beta * (1 + v)
@@ -185,12 +150,12 @@ class EvidentialLoss(_LossFunctionBase):
 class BCELoss(_LossFunctionBase):
     def forward(
         self,
-        inputs: Float[Tensor, "b t"],
+        preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Tensor:
-        L = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+        L = F.binary_cross_entropy_with_logits(preds, targets, reduction="none")
 
         return self._reduce(L, mask, sample_weights)
 
@@ -199,14 +164,14 @@ class BCELoss(_LossFunctionBase):
 class CrossEntropyLoss(_LossFunctionBase):
     def forward(
         self,
-        inputs: Float[Tensor, "b t k"],
+        preds: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Tensor:
-        inputs = inputs.transpose(1, 2)
+        preds = preds.transpose(1, 2)
         targets = targets.long()
-        L = F.cross_entropy(inputs, targets, reduction="none")
+        L = F.cross_entropy(preds, targets, reduction="none")
 
         return self._reduce(L, mask, sample_weights)
 
@@ -298,20 +263,20 @@ class DirichletLoss(_LossFunctionBase):
 
     def forward(
         self,
-        inputs: Float[Tensor, "b t k"],
+        preds: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Tensor:
         targets = F.one_hot(targets, num_classes=2)
 
-        S = inputs.sum(-1, keepdim=True)
-        p = inputs / S
+        S = preds.sum(-1, keepdim=True)
+        p = preds / S
         A = (targets - p).square().sum(-1)
         B = ((p * (1 - p)) / (S + 1)).sum(-1)
         L_mse = A + B
 
-        alpha = targets + (1 - targets) * inputs
+        alpha = targets + (1 - targets) * preds
         beta = torch.ones_like(alpha)
         S_alpha = alpha.sum(-1)
         S_beta = beta.sum(-1)

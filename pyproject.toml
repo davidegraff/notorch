@@ -31,6 +31,7 @@ dependencies = [
     "torch-scatter",
     "torch>=2.5.0",
     "tensordict>=0.6.2",
+    "torchmetrics>=1.6.0",
 ]
 
 [dependency-groups]
