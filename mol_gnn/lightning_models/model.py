@@ -5,7 +5,7 @@ from torch import nn, Tensor, optim
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
 
-from mol_gnn.schedulers import NoamLR
+from mol_gnn.schedulers import NoamLR, NoamLikeLRSched
 from mol_gnn.types import ModelModuleConfig, LossModuleConfig
 
 
@@ -135,7 +135,7 @@ class SimpleModel(L.LightningModule):
     def configure_optimizers(self):
         opt = optim.Adam(self.parameters(), self.init_lr)
 
-        lr_sched = NoamLR(
+        lr_sched = NoamLikeLRSched(
             opt,
             self.warmup_epochs,
             self.trainer.max_epochs,
