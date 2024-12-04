@@ -6,7 +6,7 @@ from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
 
 from mol_gnn.schedulers import NoamLR
-from mol_gnn.types import ModelConfig, LossConfig
+from mol_gnn.types import ModelModuleConfig, LossModuleConfig
 
 
 class SimpleModel(L.LightningModule):
@@ -17,56 +17,55 @@ class SimpleModel(L.LightningModule):
 
     Parameters
     ----------
-    model_config : ModelConfig
-        A mapping from a module name to a 3-tuple containing:
+    model_config : dict[str, ModelModuleConfig]
+        A mapping from a name to a dictionary with the keys:
 
-            1. a :class:`~torch.nn.Module` to be wrapped inside a
-            :class:`~tensordict.nn.TensorDictModule`.
-            2. the input keys to the module as either:
-                - a list of input keys that will be fetched from the intermediate `TensorDict`
-                and passed in as positional arguments to the module
-                - a dictionary mapping from keyword argument name to the keys that will be
-                fetched and supplied to the corresponding argument
-            3. the keys under which the module's output will be placed into the tensordict
+        * ``module``: the :class:`~torch.nn.Module` that will be wrapped inside a
+        :class:`~tensordict.nn.TensorDictModule`.
+        * ``in_keys``: the input keys to the module as either:
 
-            .. note::
-                The output values will be placed in a sub-tensordict under the module's name (i.e.,
-                the key corresponding to the 3-tuple)
-    loss_config : LossConfig
-        A mapping from a module name to a 3-tuple containing:
+            - a list of input keys that will be fetched from the intermediate `TensorDict`
+            and passed in as positional arguments to the module
+            - a dictionary mapping from keyword argument name to the keys that will be
+            fetched and supplied to the corresponding argument
 
-            1. a float for the loss's weight in the overall loss
-            2. a :class:`~torch.nn.Module` to be wrapped inside a
-            :class:`~tensordict.nn.TensorDictModule`.
-            3. the input keys of the module
+        * ``out_keys``: the keys under which the module's output will be placed into the tensordict
+        .. note::
+            The output values will be placed in a sub-tensordict under the module's name (i.e.,
+            the key corresponding to the 3-tuple)
+
+    loss_config : dict[str, LossModuleConfig]
+        A mapping from a name to a dictionary containing keys:
+
+        - ``weight``: a float for the term's weight in the total loss
+        - ``module``: a callable that returns a single tensor
+        - ``in_keys``: the input keys of the module
 
         .. note::
-            The module must produce **only** 1 output. This will be placed in a sub-tensordict under
-            the nested key `("loss", KEY)`
+            Each term will be placed into the tensordict under the nested key `("loss", KEY)`
 
-        The overall training loss is computed as the weighted sum of all loss term values. For more
-        details on (2), see :attr:`model_config`.
-    metric_config : LossConfig
-        A mapping from a module name to a 3-tuple containing:
+        The overall training loss is computed as the weighted sum of all terms. For more
+        details on the ``in_keys`` key, see :attr:`model_config`.
 
-            1. a float for the loss's weight in the overall loss
-            2. a :class:`~torch.nn.Module` to be wrapped inside a
-            :class:`~tensordict.nn.TensorDictModule`.
-            3. the input keys of the module
+    metric_config : dict[str, LossModuleConfig]
+        A mapping from a name to a dictionary containing keys:
+
+        - ``weight``: a float for the term's weight in the total validation loss
+        - ``module``: a callable that returns a single tensor
+        - ``in_keys``: the input keys of the module
 
         .. note::
-            The module must produce **only** 1 output. This will be placed in a sub-tensordict under
-            the nested key `("loss", KEY)`
+            Each term will be placed into the tensordict under the nested key `("metric", KEY)`
 
         The overall validation loss is computed as the weighted sum of all loss term values. For
-        more details on (2), see :attr:`model_config`.
+        details on the ``in_keys`` key, see :attr:`model_config`.
     """
 
     def __init__(
         self,
-        model_config: ModelConfig,
-        loss_config: LossConfig,
-        metric_config: LossConfig,
+        model_config: dict[str, ModelModuleConfig],
+        loss_config: dict[str, LossModuleConfig],
+        metric_config: dict[str, LossModuleConfig],
     ):
         super().__init__()
 
