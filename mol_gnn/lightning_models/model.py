@@ -10,12 +10,63 @@ from mol_gnn.types import ModelConfig, LossConfig
 
 
 class SimpleModel(L.LightningModule):
+    """A :class:`SimpleModel` is a generic class for composing (mostly) arbitrary models.
+
+    The general recipe consists of three configuration dictionaries that define the model, the loss,
+    and the evaluation/testing metrics, respectively. The model configuration dictionary defines a
+
+    Parameters
+    ----------
+    model_config : ModelConfig
+        A mapping from a module name to a 3-tuple containing:
+
+            1. a :class:`~torch.nn.Module` to be wrapped inside a
+            :class:`~tensordict.nn.TensorDictModule`.
+            2. the input keys to the module as either:
+                - a list of input keys that will be fetched from the intermediate `TensorDict`
+                and passed in as positional arguments to the module
+                - a dictionary mapping from keyword argument name to the keys that will be
+                fetched and supplied to the corresponding argument
+            3. the keys under which the module's output will be placed into the tensordict
+
+            .. note::
+                The output values will be placed in a sub-tensordict under the module's name (i.e.,
+                the key corresponding to the 3-tuple)
+    loss_config : LossConfig
+        A mapping from a module name to a 3-tuple containing:
+
+            1. a float for the loss's weight in the overall loss
+            2. a :class:`~torch.nn.Module` to be wrapped inside a
+            :class:`~tensordict.nn.TensorDictModule`.
+            3. the input keys of the module
+
+        .. note::
+            The module must produce **only** 1 output. This will be placed in a sub-tensordict under
+            the nested key `("loss", KEY)`
+
+        The overall training loss is computed as the weighted sum of all loss term values. For more
+        details on (2), see :attr:`model_config`.
+    metric_config : LossConfig
+        A mapping from a module name to a 3-tuple containing:
+
+            1. a float for the loss's weight in the overall loss
+            2. a :class:`~torch.nn.Module` to be wrapped inside a
+            :class:`~tensordict.nn.TensorDictModule`.
+            3. the input keys of the module
+
+        .. note::
+            The module must produce **only** 1 output. This will be placed in a sub-tensordict under
+            the nested key `("loss", KEY)`
+
+        The overall validation loss is computed as the weighted sum of all loss term values. For
+        more details on (2), see :attr:`model_config`.
+    """
+
     def __init__(
         self,
         model_config: ModelConfig,
         loss_config: LossConfig,
         metric_config: LossConfig,
-        # selected_out_keys: list[str | tuple[str, ...]] | None = None,
     ):
         super().__init__()
 
