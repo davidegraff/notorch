@@ -1,17 +1,5 @@
 from typing import Callable, Concatenate
 
-from torch.optim import Optimizer, Adadelta
-
-
-class MetaFactory[S, T, **P]:
-    def __init__(self, clz: Callable[Concatenate[S, P], T], *args: P.args, **kwargs: P.kwargs):
-        self.clz = clz
-        self.args = args
-        self.kwargs = kwargs
-
-    def __call__(self, s: S):
-        return self.clz(s, *self.args, **self.kwargs)
-
 
 def meta_factory[S, T, **P](clz: Callable[Concatenate[S, P], T], *args: P.args, **kwargs: P.kwargs):
     """Build a parameterized factory from a class factory.
