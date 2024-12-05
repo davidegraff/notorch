@@ -1,5 +1,27 @@
+from typing import Literal
+
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import LambdaLR, LRScheduler
+
+from mol_gnn.types import LRSchedConfig
+
+
+def configure_lr_scheduler(
+    scheduler: LRScheduler,
+    interval: Literal["step", "epoch"] = "epoch",
+    frequency: int = 1,
+    monitor: str = "val_loss",
+    strict: bool = True,
+    name: str | None = None,
+) -> LRSchedConfig:
+    return dict(
+        scheduler=scheduler,
+        interval=interval,
+        frequency=frequency,
+        monitor=monitor,
+        strict=strict,
+        name=name,
+    )
 
 
 def NoamLikeLRSched(
@@ -10,29 +32,28 @@ def NoamLikeLRSched(
     max_lr: float,
     final_lr: float,
 ) -> LambdaLR:
-    r"""Build a Noam-like learning rate scheduler which schedules the learning rate with a piecewise
-    linear followed by an exponential decay.
+    r"""A learning rate scheduler that is _like_ Noam scheduler from [1]_ (sec. 5.3).
 
-    The learning rate increases linearly from ``init_lr`` to ``max_lr`` over the course of
-    the first warmup_steps then decreases exponentially to ``final_lr`` over the course of the
-    remaining ``total_steps - warmup_steps`` (where ``total_steps = total_epochs * steps_per_epoch``
-    ). This is roughly based on the learning rate schedule from [1]_, section 5.3.
+    The learning rate is scheduled via piecewise linear warmup followed by exponential decay.
+    Specficially, it increases linearly from ``init_lr`` to ``max_lr`` over :attr:`warmup_steps`
+    steps then decreases exponentially to ``final_lr`` over ``total_steps - warmup_steps`` (where
+    ``total_steps = total_epochs * steps_per_epoch``).
 
-    Formally, the learning rate schedule is defined as:
+    Formally, the learning rate is defined as:
 
     .. math::
         \mathtt{lr}(i) &=
             \begin{cases}
                 \mathtt{init\_lr} + \delta \cdot i &\text{if } i < \mathtt{warmup\_steps} \\
                 \mathtt{max\_lr} \cdot \left( \frac{\mathtt{final\_lr}}{\mathtt{max\_lr}} \right)^{
-                    \gamma(i)} &\text{otherwise} \\
+                    \gamma(i)} &\text{otherwise
+                } \\
             \end{cases}
         \\
-        \delta &\mathrel{:=}
+        \delta &\equiv
             \frac{\mathtt{max\_lr} - \mathtt{init\_lr}}{\mathtt{warmup\_steps}} \\
-        \gamma(i) &\mathrel{:=}
+        \gamma(i) &\coloneqq
             \frac{i - \mathtt{warmup\_steps}}{\mathtt{total\_steps} - \mathtt{warmup\_steps}}
-
 
     Parameters
     -----------
@@ -54,6 +75,11 @@ def NoamLikeLRSched(
     .. [1] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł.
     and Polosukhin, I. "Attention is all you need." Advances in neural information processing
     systems, 2017, 30. https://arxiv.org/abs/1706.03762
+
+    Notes
+    -----
+    - this is directly copied from
+    https://github.com/chemprop/chemprop/blob/fa2d6dceb054ced6fe46191a628cfd664037d5e7/chemprop/schedulers.py
     """
 
     def lr_lambda(step: int):
