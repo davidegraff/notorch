@@ -13,6 +13,7 @@ class _AffineTransformBase(nn.Module):
     def extra_repr(self) -> str:
         return f"loc={self.loc}, scale={self.scale}"
 
+
 class AffineTransform(_AffineTransformBase):
     def forward(self, X: Float[Tensor, "b d"]) -> Float[Tensor, "b d"]:
         return (X - self.loc) / self.scale

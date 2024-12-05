@@ -66,7 +66,7 @@ class MultiheadedSelfAttentionLayer(nn.Module):
             nn.Linear(node_dim, embed_dim), nn.Unflatten(-1, (-1, num_heads, head_dim))
         )
         self.bias = nn.Sequential(edge_dim, 1)
-        self.sqrt_dk = head_dim ** 1/2
+        self.sqrt_dk = head_dim**1 / 2
 
         self.W_v = nn.Sequential(
             nn.Linear(node_dim, embed_dim), nn.Unflatten(-1, (-1, num_heads, head_dim))
@@ -78,7 +78,7 @@ class MultiheadedSelfAttentionLayer(nn.Module):
 
         Q = self.W_q(G.V[src])
         K = self.W_k(G.V[dest])
-        V = self.W_v(G.V[dest]) # (E, h, d)
+        V = self.W_v(G.V[dest])  # (E, h, d)
         bias = self.bias(G.E)
 
         scores = einsum("Ehd,Ehd->Eh", Q, K) / self.sqrt_dk + bias

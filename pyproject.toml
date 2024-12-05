@@ -47,6 +47,7 @@ mol-gnn = "mol_gnn.cli.main:main"
 [dependency-groups]
 dev = [
     "flake8>=7.1.1",
+    "ipykernel>=6.29.5",
     "ipython>=8.29.0",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",

@@ -4,11 +4,11 @@ from typing import TypeVar
 from torch import nn
 import torch
 
-T_mod = TypeVar("T_mod", bound=nn.Module)
+T = TypeVar("T", bound=nn.Module)
 
 
-class Residual[T_mod](nn.Module):
-    def __init__(self, module: T_mod, op: Callable = torch.add):
+class Residual[T](nn.Module):
+    def __init__(self, module: T, op: Callable = torch.add):
         super().__init__()
 
         self.module = module

@@ -1,177 +1,162 @@
-from abc import abstractmethod
-from dataclasses import dataclass
+from typing import Literal
 
+from jaxtyping import ArrayLike, Bool, Float
 import torch
 from torch import Tensor
-from torchmetrics import functional as F
+from torch.nn import functional as F, nn
+from torchmetrics.functional import classification
 
+from mol_gnn.nn.loss import _BoundedMixin, _LossFunctionBase
 from mol_gnn.utils import ClassRegistry
-from mol_gnn.nn.loss import *
-
-__all__ = [
-    "Metric",
-    "MetricRegistry",
-    "ThresholdedMixin",
-    "MAEMetric",
-    "MSEMetric",
-    "RMSEMetric",
-    "BoundedMixin",
-    "BoundedMAEMetric",
-    "BoundedMSEMetric",
-    "BoundedRMSEMetric",
-    "R2Metric",
-    "AUROCMetric",
-    "AUPRCMetric",
-    "AccuracyMetric",
-    "F1Metric",
-    "BCEMetric",
-    "CrossEntropyMetric",
-    "BinaryMCCMetric",
-    "MulticlassMCCMetric",
-    "SIDMetric",
-    "WassersteinMetric",
-]
 
 
-class Metric(LossFunction):
-    """A :class:`Metric` is a :class:`~mol_gnn.nn.LossFunction` that may be
-    non-differentiable
-    """
-
-    minimize: bool = True
-
-    def __call__(
-        self,
-        preds: Tensor,
-        targets: Tensor,
-        mask: Tensor,
-        sample_weights: Tensor,
-        task_weights: Tensor,
-        lt_mask: Tensor,
-        gt_mask: Tensor,
-    ):
-        return self.forward(preds, targets, mask, lt_mask, gt_mask)[mask].mean()
-
-    @abstractmethod
-    def forward(self, preds, targets, mask, lt_mask, gt_mask) -> Tensor:
-        pass
-
-
-MetricRegistry = ClassRegistry[Metric]()
-
-
-@dataclass
-class ThresholdedMixin:
-    threshold: float | None = 0.5
+MetricRegistry = ClassRegistry()
 
 
 @MetricRegistry.register("mae")
-class MAEMetric(Metric):
-    def forward(self, preds, targets, *args) -> Tensor:
-        return (preds - targets).abs()
+class MAEMetric(_LossFunctionBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        L = (preds - targets).abs()
 
-
-@MetricRegistry.register("mse")
-class MSEMetric(MSELoss, Metric):
-    pass
+        return self._reduce(L, mask, sample_weights)
 
 
 @MetricRegistry.register("rmse")
-class RMSEMetric(MSEMetric):
-    def forward(self, *args, **kwargs) -> Tensor:
-        return super().forward(*args, **kwargs).sqrt()
+class RMSEMetric(_LossFunctionBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        L = F.mse_loss(preds, targets, reduction="none")
 
-
-class BoundedMixin:
-    def forward(self, preds, targets, mask, lt_mask, gt_mask) -> Tensor:
-        preds = torch.where((preds < targets) & lt_mask, targets, preds)
-        preds = torch.where((preds > targets) & gt_mask, targets, preds)
-
-        return super().forward(preds, targets, mask, lt_mask, gt_mask)
+        return self._reduce(L.sqrt(), mask, sample_weights)
 
 
 @MetricRegistry.register("bounded-mae")
-class BoundedMAEMetric(MAEMetric, BoundedMixin):
-    pass
-
-
-@MetricRegistry.register("bounded-mse")
-class BoundedMSEMetric(MSEMetric, BoundedMixin):
+class BoundedMAEMetric(_BoundedMixin, MAEMetric):
     pass
 
 
 @MetricRegistry.register("bounded-rmse")
-class BoundedRMSEMetric(RMSEMetric, BoundedMixin):
+class BoundedRMSEMetric(_BoundedMixin, RMSEMetric):
     pass
 
 
 @MetricRegistry.register("r2")
-class R2Metric(Metric):
-    minimize = False
+class R2Metric(_LossFunctionBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        target_means = (sample_weights * targets).mean(0, keepdim=True)
 
-    def __call__(self, preds: Tensor, targets: Tensor, mask: Tensor, *args, **kwargs):
-        return F.r2_score(preds[mask], targets[mask])
+        rss = torch.sum(sample_weights * (preds - targets).square() * mask, dim=0)
+        tss = torch.sum(sample_weights * (targets - target_means).square() * mask, dim=0)
+
+        return ((1 - rss / tss) * self.task_weights).mean(0)
+
+
+class _ClassificationMetricBase(nn.Module):
+    def __init__(self, task: Literal["binary", "multilabel"]) -> None:
+        super().__init__()
+
+        self.task = task
+
+    def extra_repr(self) -> str:
+        return f"task={self.task}"
 
 
 @MetricRegistry.register("roc")
-class AUROCMetric(Metric):
-    minimize = False
+class AUROCMetric(_ClassificationMetricBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t *k"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        targets = torch.where(mask, targets, -1).long()
 
-    def __call__(self, preds: Tensor, targets: Tensor, mask: Tensor, *args, **kwargs):
-        return F.auroc(preds[mask], targets[mask].long())
+        return classification.auroc(preds, targets, self.task, ignore_index=-1)
 
 
 @MetricRegistry.register("prc")
-class AUPRCMetric(Metric):
-    minimize = False
+class AUPRCMetric(_ClassificationMetricBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t *k"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        targets = torch.where(mask, targets, -1).long()
 
-    def __call__(self, preds: Tensor, targets: Tensor, *args, **kwargs):
-        p, r, _ = F.precision_recall(preds, targets.long())
-
-        return F.auc(r, p)
+        return classification.average_precision(preds, targets, self.task, ignore_index=-1)
 
 
 @MetricRegistry.register("accuracy")
-class AccuracyMetric(Metric, ThresholdedMixin):
-    minimize = False
+class AccuracyMetric(_LossFunctionBase):
+    def __init__(
+        self,
+        task_weights: Float[ArrayLike, "t"],
+        task: Literal["binary", "multilabel"],
+        threshold: float = 0.5,
+    ):
+        super().__init__(task_weights)
 
-    def __call__(self, preds: Tensor, targets: Tensor, mask: Tensor, *args, **kwargs):
-        return F.accuracy(preds[mask], targets[mask].long(), threshold=self.threshold)
+        self.task = task
+        self.threshold = threshold
 
+    def forward(
+        self,
+        preds: Float[Tensor, "b t *k"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        if self.task == "binary":
+            preds = preds > self.threshold
+        else:
+            preds = preds.softmax(-1)
 
-@MetricRegistry.register("f1")
-class F1Metric(Metric):
-    minimize = False
+        L = preds == targets
 
-    def __call__(self, preds: Tensor, targets: Tensor, mask: Tensor, *args, **kwargs):
-        return F.f1_score(preds[mask], targets[mask].long(), threshold=self.threshold)
+        return self._reduce(L, mask, sample_weights)
 
-
-@MetricRegistry.register("bce")
-class BCEMetric(BCELoss, Metric):
-    pass
-
-
-@MetricRegistry.register("ce")
-class CrossEntropyMetric(CrossEntropyLoss, Metric):
-    pass
-
-
-@MetricRegistry.register("binary-mcc")
-class BinaryMCCMetric(BinaryMCCLoss, Metric):
-    pass
-
-
-@MetricRegistry.register("multiclass-mcc")
-class MulticlassMCCMetric(MulticlassMCCLoss, Metric):
-    pass
+    def extra_repr(self) -> str:
+        return f"task={self.task}, threshold={self.threshold:0.1f}"
 
 
-@MetricRegistry.register("sid")
-class SIDMetric(SIDLoss, Metric):
-    pass
+@MetricRegistry.register("F1")
+class F1(nn.Module):
+    def __init__(self, task: Literal["binary", "multilabel"], threshold: float = 0.5):
+        super().__init__()
 
+        self.task = task
+        self.threshold = threshold
 
-@MetricRegistry.register("wasserstein")
-class WassersteinMetric(WassersteinLoss, Metric):
-    pass
+    def forward(
+        self,
+        preds: Float[Tensor, "b t *k"],
+        targets: Float[Tensor, "b t"],
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        targets = torch.where(mask, targets, -1).long()
+
+        return classification.f1_score(preds, targets, self.task, threshold=self.threshold)
+
+    def extra_repr(self) -> str:
+        return f"task={self.task}, threshold={self.threshold:0.1f}"

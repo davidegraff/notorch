@@ -18,8 +18,13 @@ class Graph:
     edge_index: Int[Tensor, "2 E"]
     """a tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
     rev_index: Int[Tensor, "E"]
-    """a tensor of shape ``|E|`` that maps from an edge index to the index of the source of the
+    """a tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
+    device: InitVar[Device] = None
+
+    def __post_init__(self, device: Device):
+        self.__device = device
+        self.to(device)
 
     @property
     def num_nodes(self) -> int:
@@ -160,9 +165,11 @@ class BatchedGraph(Graph):
     """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
 
     batch_node_index: Int[Tensor, "V"]
-    """the index of the parent :class:`Graph` of each node the batched graph"""
+    """A tensor of shape ``V`` containing the index of the parent :class:`Graph` of each node the
+    batched graph."""
     batch_edge_index: Int[Tensor, "E"]
-    """the index of the parent :class:`Graph` of each edge the batched graph"""
+    """A tensor of shape ``E`` containing the index of the parent :class:`Graph` of each edge the
+    batched graph."""
     size: InitVar[int] | None = None
     """The number of graphs, if known. Otherwise, will be estimated via
     :code:`batch_node_index.max() + 1`"""
@@ -199,11 +206,6 @@ class BatchedGraph(Graph):
         size = i + 1
 
         return cls(V, E, edge_index, rev_index, batch_node_index, batch_edge_index, size)
-
-    # def to_graphs(self) -> list[Graph]:
-    #     split_sizes = self.batch_node_index.bincount(minlength=len(self))
-
-    #     Vs = self.V.split_with_sizes(split_sizes)
 
     def __len__(self) -> int:
         """The number of individual :class:`Graph`s in this batch"""
