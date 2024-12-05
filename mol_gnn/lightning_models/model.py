@@ -72,7 +72,7 @@ class SimpleModel(L.LightningModule):
         metric_config: dict[str, LossModuleConfig],
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
-        keep_all_output: bool = False
+        keep_all_output: bool = False,
     ):
         super().__init__()
 
@@ -172,4 +172,3 @@ class SimpleModel(L.LightningModule):
 
 lr_sched_factory : Callable
 """
-
