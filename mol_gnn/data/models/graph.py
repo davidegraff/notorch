@@ -30,6 +30,22 @@ class Graph:
         return len(self.E)
 
     @property
+    def device(self) -> Device:  # noqa: F811
+        return self.__device
+
+    def to(self, device: Device) -> Self:
+        self.__device = device
+
+        self.V = self.V.to(device)
+        self.E = self.E.to(device)
+        self.edge_index = self.edge_index.to(device)
+        self.rev_index = self.rev_index.to(device)
+        self.batch_node_index = self.batch_node_index.to(device)
+        self.batch_edge_index = self.batch_edge_index.to(device)
+
+        return self
+
+    @property
     def A(self) -> Int[Tensor, "V V"]:
         """The dense adjacency matrix."""
         num_nodes = self.V.shape[0]
@@ -123,6 +139,21 @@ class Graph:
 
         return (node_ids, edge_ids)
 
+    def __repr__(self) -> str:
+        INDENT = " " * 4
+        lines = [f"{INDENT}{line}" for line in self._build_field_info()]
+        lines = [f"{self.__class__.__name__}("] + lines + [")"]
+
+        return "\n".join([f"{self.__class__.__name__}("] + lines + [")"])
+
+    def _build_field_info(self) -> list[str]:
+        return [
+            f"V: Tensor(shape={self.V.shape})",
+            f"E: Tensor(shape={self.E.shape})",
+            f"device={self.__device}",
+            "",
+        ]
+
 
 @dataclass(repr=False, eq=False)
 class BatchedGraph(Graph):
@@ -187,3 +218,11 @@ class BatchedGraph(Graph):
         self.batch_edge_index = self.batch_edge_index.to(device)
 
         return self
+
+    def _build_field_info(self) -> list[str]:
+        return [
+            f"V: Tensor(shape={self.V.shape})",
+            f"E: Tensor(shape={self.E.shape})",
+            f"device={self.__device}",
+            f"batch_size={len(self)}" "",
+        ]
