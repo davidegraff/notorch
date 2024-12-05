@@ -11,7 +11,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader
 
-from mol_gnn import featurizers, models, nn
+from mol_gnn import featurizers, lightning_models, nn
 from mol_gnn.data import ReactionDatapoint, ReactionDataset, collate_batch
 from mol_gnn.featurizers import CondensedReactionGraphFeaturizer
 
@@ -56,7 +56,7 @@ def dataloader(data):
 def test_integration(dataloader, mp):
     agg = nn.MeanAggregation()
     ffn = nn.RegressionFFN()
-    mpnn = models.MPNN(mp, agg, ffn, True)
+    mpnn = lightning_models.MPNN(mp, agg, ffn, True)
 
     trainer = pl.Trainer(
         logger=False,
@@ -73,7 +73,7 @@ def test_integration(dataloader, mp):
 def test_overfitting(dataloader, mp: nn.MessagePassing):
     agg = nn.MeanAggregation()
     ffn = nn.RegressionFFN()
-    mpnn = models.MPNN(mp, agg, ffn, True)
+    mpnn = lightning_models.MPNN(mp, agg, ffn, True)
 
     trainer = pl.Trainer(
         logger=False,

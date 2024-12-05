@@ -9,7 +9,9 @@ from mol_gnn.data.models.graph import BatchedGraph, Graph
 
 class GNNLayer(nn.Module):
     @abstractmethod
-    def forward(self, G: Graph) -> Graph:
+    def forward(
+        self, G: Annotated[Graph, "(V t_v) (E t_e)"]
+    ) -> Annotated[Graph, "(V d_v) (E d_e)"]:
         pass
 
 

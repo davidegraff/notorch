@@ -20,6 +20,11 @@ class Graph:
     rev_index: Int[Tensor, "E"]
     """a tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
+    device: InitVar[Device] = None
+
+    def __post_init__(self, device: Device):
+        self.__device = device
+        self.to(device)
 
     @property
     def num_nodes(self) -> int:
@@ -28,6 +33,22 @@ class Graph:
     @property
     def num_edges(self) -> int:
         return len(self.E)
+
+    @property
+    def device(self) -> Device: # noqa: F811
+        return self.__device
+
+    def to(self, device: Device) -> Self:
+        self.__device = device
+
+        self.V = self.V.to(device)
+        self.E = self.E.to(device)
+        self.edge_index = self.edge_index.to(device)
+        self.rev_index = self.rev_index.to(device)
+        self.batch_node_index = self.batch_node_index.to(device)
+        self.batch_edge_index = self.batch_edge_index.to(device)
+
+        return self
 
     @property
     def A(self) -> Int[Tensor, "V V"]:
@@ -123,6 +144,20 @@ class Graph:
 
         return (node_ids, edge_ids)
 
+    def __repr__(self) -> str:
+        INDENT = " " * 4
+        lines = [f"{INDENT}{line}" for line in self._build_field_info()]
+        lines = [f"{self.__class__.__name__}("] + lines + [")"]
+
+        return "\n".join([f"{self.__class__.__name__}("] + lines + [")"])
+
+    def _build_field_info(self) -> list[str]:
+        return [
+            f"V: Tensor(shape={self.V.shape})",
+            f"E: Tensor(shape={self.E.shape})",
+            f"device={self.__device}",
+            ""
+        ]
 
 @dataclass(repr=False, eq=False)
 class BatchedGraph(Graph):
@@ -171,11 +206,6 @@ class BatchedGraph(Graph):
 
         return cls(V, E, edge_index, rev_index, batch_node_index, batch_edge_index, size)
 
-    # def to_graphs(self) -> list[Graph]:
-    #     split_sizes = self.batch_node_index.bincount(minlength=len(self))
-
-    #     Vs = self.V.split_with_sizes(split_sizes)
-
     def __len__(self) -> int:
         """The number of individual :class:`Graph`s in this batch"""
         return self.__size
@@ -189,3 +219,13 @@ class BatchedGraph(Graph):
         self.batch_edge_index = self.batch_edge_index.to(device)
 
         return self
+
+    def _build_field_info(self) -> list[str]:
+        return [
+            f"V: Tensor(shape={self.V.shape})",
+            f"E: Tensor(shape={self.E.shape})",
+            f"device={self.__device}",
+            f"batch_size={len(self)}"
+            ""
+        ]
+

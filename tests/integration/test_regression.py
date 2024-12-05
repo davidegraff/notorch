@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
 
-from mol_gnn import models, nn
+from mol_gnn import lightning_models, nn
 from mol_gnn.nn.gnn import agg
 from mol_gnn.nn.message_passing import edge, embed, message, update
 from mol_gnn.data import MoleculeDataset
@@ -50,7 +50,7 @@ def dataloader(random_mol_data):
 def test_quick(mp: nn.MessagePassing, dataloader: DataLoader):
     encoder = nn.GraphEncoder(mp, agg.Mean())
     predictor = nn.RegressionFFN()
-    mpnn = models.MPNN(encoder, predictor, True)
+    mpnn = lightning_models.MPNN(encoder, predictor, True)
 
     trainer = pl.Trainer(
         logger=False,
@@ -67,7 +67,7 @@ def test_quick(mp: nn.MessagePassing, dataloader: DataLoader):
 def test_overfit(mp: nn.MessagePassing, dataloader: DataLoader):
     encoder = nn.GraphEncoder(mp, agg.Sum())
     predictor = nn.RegressionFFN()
-    mpnn = models.MPNN(encoder, predictor, True)
+    mpnn = lightning_models.MPNN(encoder, predictor, True)
 
     trainer = pl.Trainer(
         logger=False,
@@ -113,7 +113,7 @@ def test_lipo(mp, lipo_data):
 
     encoder = nn.GraphEncoder(mp, agg.Sum())
     predictor = nn.RegressionFFN()
-    mpnn = models.MPNN(encoder, predictor, True)
+    mpnn = lightning_models.MPNN(encoder, predictor, True)
 
     trainer = pl.Trainer(
         logger=False,
