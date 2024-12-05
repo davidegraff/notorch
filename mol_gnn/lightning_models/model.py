@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from typing import Callable
+
 import lightning as L
-from torch import nn, Tensor, optim
+from torch import Tensor, nn
+from torch.optim import Adam, Optimizer
+from torch.optim.optimizer import ParamsT
+from torch.optim.lr_scheduler import LRScheduler
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
 
-from mol_gnn.schedulers import NoamLR
-from mol_gnn.types import ModelModuleConfig, LossModuleConfig
+from mol_gnn.types import LRSchedConfig, ModelModuleConfig, LossModuleConfig
 
 
 class SimpleModel(L.LightningModule):
@@ -66,6 +70,9 @@ class SimpleModel(L.LightningModule):
         model_config: dict[str, ModelModuleConfig],
         loss_config: dict[str, LossModuleConfig],
         metric_config: dict[str, LossModuleConfig],
+        optim_factory: Callable[[ParamsT], Optimizer] = Adam,
+        lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
+        keep_all_output: bool = False,
     ):
         super().__init__()
 
@@ -88,9 +95,14 @@ class SimpleModel(L.LightningModule):
             metric_modules.append(wrapped_module)
             selected_out_keys += in_keys
 
+        if keep_all_output:
+            selected_out_keys = None
+
         self.model = TensorDictSequential(modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
+        self.optim_factory = optim_factory
+        self.lr_sched_factory = lr_sched_factory
 
     def forward(self, td: TensorDict) -> Tensor:
         return self.model(td)
@@ -133,9 +145,16 @@ class SimpleModel(L.LightningModule):
         self.log("val/loss", metric, prog_bar=True)
 
     def configure_optimizers(self):
+        optimizer = self.optim_factory(self.parameters())
+        lr_scheduler = self.lr_sched_factory(optimizer)
+
+        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
+
+
+"""    def configure_optimizers(self):
         opt = optim.Adam(self.parameters(), self.init_lr)
 
-        lr_sched = NoamLR(
+        lr_sched = NoamLikeLRSched(
             opt,
             self.warmup_epochs,
             self.trainer.max_epochs,
@@ -150,3 +169,6 @@ class SimpleModel(L.LightningModule):
         }
 
         return {"optimizer": opt, "lr_scheduler": lr_sched_config}
+
+lr_sched_factory : Callable
+"""

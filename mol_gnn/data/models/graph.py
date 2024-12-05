@@ -35,7 +35,7 @@ class Graph:
         return len(self.E)
 
     @property
-    def device(self) -> Device: # noqa: F811
+    def device(self) -> Device:  # noqa: F811
         return self.__device
 
     def to(self, device: Device) -> Self:
@@ -156,8 +156,9 @@ class Graph:
             f"V: Tensor(shape={self.V.shape})",
             f"E: Tensor(shape={self.E.shape})",
             f"device={self.__device}",
-            ""
+            "",
         ]
+
 
 @dataclass(repr=False, eq=False)
 class BatchedGraph(Graph):
@@ -225,7 +226,5 @@ class BatchedGraph(Graph):
             f"V: Tensor(shape={self.V.shape})",
             f"E: Tensor(shape={self.E.shape})",
             f"device={self.__device}",
-            f"batch_size={len(self)}"
-            ""
+            f"batch_size={len(self)}" "",
         ]
-

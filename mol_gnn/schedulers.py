@@ -1,133 +1,95 @@
-import numpy as np
-from numpy.typing import ArrayLike
+from typing import Literal
+
 from torch.optim import Optimizer
-from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.lr_scheduler import LambdaLR, LRScheduler
+
+from mol_gnn.types import LRSchedConfig
 
 
-class NoamLR(LRScheduler):
-    r"""A Noam learning rate scheduler schedules the learning rate with a piecewise linear followed
-    by an exponential decay.
+def configure_lr_scheduler(
+    scheduler: LRScheduler,
+    interval: Literal["step", "epoch"] = "epoch",
+    frequency: int = 1,
+    monitor: str = "val_loss",
+    strict: bool = True,
+    name: str | None = None,
+) -> LRSchedConfig:
+    return dict(
+        scheduler=scheduler,
+        interval=interval,
+        frequency=frequency,
+        monitor=monitor,
+        strict=strict,
+        name=name,
+    )
 
-    The learning rate increases linearly from ``init_lr`` to ``max_lr`` over the course of
-    the first warmup_steps then decreases exponentially to ``final_lr`` over the course of the
-    remaining ``total_steps - warmup_steps`` (where
-    ``total_steps = total_epochs * steps_per_epoch``). This is roughly based on the learning rate
-    schedule from [1]_, section 5.3.
 
-    Formally, the learning rate schedule is defined as:
+def NoamLikeLRSched(
+    optimizer: Optimizer,
+    warmup_steps: int,
+    cooldown_steps: int,
+    init_lr: float,
+    max_lr: float,
+    final_lr: float,
+) -> LambdaLR:
+    r"""A learning rate scheduler that is _like_ Noam scheduler from [1]_ (sec. 5.3).
+
+    The learning rate is scheduled via piecewise linear warmup followed by exponential decay.
+    Specficially, it increases linearly from ``init_lr`` to ``max_lr`` over :attr:`warmup_steps`
+    steps then decreases exponentially to ``final_lr`` over ``total_steps - warmup_steps`` (where
+    ``total_steps = total_epochs * steps_per_epoch``).
+
+    Formally, the learning rate is defined as:
 
     .. math::
         \mathtt{lr}(i) &=
             \begin{cases}
                 \mathtt{init\_lr} + \delta \cdot i &\text{if } i < \mathtt{warmup\_steps} \\
-                \mathtt{max\_lr} \cdot \left(
-                    \frac{\mathtt{final\_lr}}{\mathtt{max\_lr}}
-                \right)^{\gamma(i)} &\text{otherwise} \\
+                \mathtt{max\_lr} \cdot \left( \frac{\mathtt{final\_lr}}{\mathtt{max\_lr}} \right)^{
+                    \gamma(i)} &\text{otherwise
+                } \\
             \end{cases}
         \\
-        \delta &\mathrel{\unicode{x2254}}
+        \delta &\equiv
             \frac{\mathtt{max\_lr} - \mathtt{init\_lr}}{\mathtt{warmup\_steps}} \\
-        \gamma(i) &\mathrel{\unicode{x2254}}
+        \gamma(i) &\coloneqq
             \frac{i - \mathtt{warmup\_steps}}{\mathtt{total\_steps} - \mathtt{warmup\_steps}}
 
-
     Parameters
-    ----------
+    -----------
     optimizer : Optimizer
         A PyTorch optimizer.
-    warmup_epochs : ArrayLike
-        The number of epochs during which to linearly increase the learning rate.
-    total_epochs : int
-        The total number of epochs.
-    steps_per_epoch : int
-        The number of steps (batches) per epoch.
-    init_lr : ArrayLike
+    warmup_steps : int
+        The number of steps during which to linearly increase the learning rate.
+    cooldown_steps : int
+        The number of steps during which to exponential decay the learning rate.
+    init_lr : float
         The initial learning rate.
-    max_lr : ArrayLike
-        The maximum learning rate (achieved after ``warmup_epochs``).
-    final_lr : ArrayLike
-        The final learning rate (achieved after ``total_epochs``).
+    max_lr : float
+        The maximum learning rate (achieved after ``warmup_steps``).
+    final_lr : float
+        The final learning rate (achieved after ``cooldown_steps``).
 
     References
     ----------
     .. [1] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, Ł.
-        and Polosukhin, I. "Attention is all you need." Advances in neural information processing
-        systems, 2017, 30. https://arxiv.org/abs/1706.03762
+    and Polosukhin, I. "Attention is all you need." Advances in neural information processing
+    systems, 2017, 30. https://arxiv.org/abs/1706.03762
+
+    Notes
+    -----
+    - this is directly copied from
+    https://github.com/chemprop/chemprop/blob/fa2d6dceb054ced6fe46191a628cfd664037d5e7/chemprop/schedulers.py
     """
 
-    def __init__(
-        self,
-        optimizer: Optimizer,
-        warmup_epochs: ArrayLike,
-        total_epochs: int,
-        steps_per_epoch: int,
-        init_lrs: ArrayLike,
-        max_lrs: ArrayLike,
-        final_lrs: ArrayLike,
-    ):
-        self.num_lrs = len(optimizer.param_groups)
-        warmup_epochs = np.atleast_1d(warmup_epochs)
-        init_lrs = np.atleast_1d(init_lrs)
-        max_lrs = np.atleast_1d(max_lrs)
-        self.final_lrs = np.atleast_1d(final_lrs)
+    def lr_lambda(step: int):
+        if step < warmup_steps:
+            warmup_factor = (max_lr - init_lr) / warmup_steps
+            return step * warmup_factor / init_lr + 1
+        elif warmup_steps <= step < warmup_steps + cooldown_steps:
+            cooldown_factor = (final_lr / max_lr) ** (1 / cooldown_steps)
+            return (max_lr * (cooldown_factor ** (step - warmup_steps))) / init_lr
+        else:
+            return final_lr / init_lr
 
-        if not (
-            self.num_lrs
-            == len(warmup_epochs)
-            == len(init_lrs)
-            == len(max_lrs)
-            == len(self.final_lrs)
-        ):
-            raise ValueError(
-                "Number of param groups must match number of: "
-                "'warmup_epochs', 'init_lr', 'max_lr', 'final_lr'! "
-                f"got: {len(self.optimizer.param_groups)} param groups, "
-                f"{len(init_lrs)} init_lr, "
-                f"{len(max_lrs)} max_lr, "
-                f"{len(self.final_lrs)} final_lr"
-            )
-
-        self.current_step = 0
-        self.lrs = init_lrs
-
-        warmup_steps = (warmup_epochs * steps_per_epoch).astype(int)
-        total_steps = total_epochs * steps_per_epoch
-        cooldown_steps = total_steps - warmup_steps
-
-        deltas = (max_lrs - init_lrs) / warmup_steps
-        gammas = (self.final_lrs / max_lrs) ** (1 / cooldown_steps)
-
-        self.scheds = []
-        for i in range(self.num_lrs):
-            warmup = init_lrs[i] + np.arange(warmup_steps[i]) * deltas[i]
-            cooldown = max_lrs[i] * (gammas[i] ** np.arange(cooldown_steps[i]))
-            self.scheds.append(np.concatenate((warmup, cooldown)))
-        self.scheds = np.array(self.scheds)
-
-        super(NoamLR, self).__init__(optimizer)
-
-    def __len__(self) -> int:
-        """The number of steps in the learning rate schedule"""
-        return self.scheds.shape[1]
-
-    def get_lr(self) -> np.ndarray:
-        """Get a list of the current learning rates"""
-        return self.lrs
-
-    def step(self, step: int | None = None):
-        """Step the learning rate
-
-        Parameters
-        ----------
-        step : int | None, default=None
-            What step to set the learning rate to. If ``None``, use ``self.current_step + 1``.
-        """
-        self.current_step = step if step is not None else self.current_step + 1
-
-        for i in range(self.num_lrs):
-            if self.current_step < len(self):
-                self.lrs[i] = self.scheds[i][self.current_step]
-            else:
-                self.lrs[i] = self.final_lrs[i]
-
-            self.optimizer.param_groups[i]["lr"] = self.lrs[i]
+    return LambdaLR(optimizer, lr_lambda)
