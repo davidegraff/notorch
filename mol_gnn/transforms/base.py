@@ -27,14 +27,6 @@ class TensorTransform[S](Sized, Transform[S, Num[Tensor, "*n d"]]):
         pass
 
 
-@dataclass
-class MultiTransform[S](Transform[S]):
-    transforms: list[Transform[S]]
-
-    def __call__(self, input):
-        return [transform(input) for transform in self.transforms]
-
-
 class Pipeline[S, T](Transform[S, T]):
     def __call__(self, input):
         return super().__call__(input)

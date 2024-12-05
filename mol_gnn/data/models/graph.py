@@ -1,4 +1,4 @@
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, KW_ONLY, dataclass, field
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int
@@ -20,11 +20,11 @@ class Graph:
     rev_index: Int[Tensor, "E"]
     """a tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
-    device: InitVar[Device] = None
+    device_: InitVar[Device] = field(default=None, kw_only=True)
 
-    def __post_init__(self, device: Device):
-        self.__device = device
-        self.to(device)
+    def __post_init__(self, device_: Device):
+        self.__device = device_
+        self.to(device_)
 
     @property
     def num_nodes(self) -> int:
@@ -35,12 +35,13 @@ class Graph:
         return len(self.E)
 
     @property
-    def device(self) -> Device:  # noqa: F811
+    def device(self) -> Device:
         return self.__device
 
     def to(self, device: Device) -> Self:
         self.__device = device
 
+        device = self.device
         self.V = self.V.to(device)
         self.E = self.E.to(device)
         self.edge_index = self.edge_index.to(device)
@@ -160,7 +161,7 @@ class Graph:
         ]
 
 
-@dataclass(repr=False, eq=False)
+@dataclass(repr=False, eq=False, kw_only=True)
 class BatchedGraph(Graph):
     """A :class:`BatchedMolGraph` represents a batch of individual :class:`Graph`s."""
 
@@ -170,7 +171,7 @@ class BatchedGraph(Graph):
     batch_edge_index: Int[Tensor, "E"]
     """A tensor of shape ``E`` containing the index of the parent :class:`Graph` of each edge the
     batched graph."""
-    size: InitVar[int] | None = None
+    size: InitVar[int | None] = None
     """The number of graphs, if known. Otherwise, will be estimated via
     :code:`batch_node_index.max() + 1`"""
 
@@ -205,13 +206,24 @@ class BatchedGraph(Graph):
         batch_edge_index = torch.cat(batch_edge_indices).long()
         size = i + 1
 
-        return cls(V, E, edge_index, rev_index, batch_node_index, batch_edge_index, size)
+        return cls(
+            V,
+            E,
+            edge_index,
+            rev_index,
+            device=G.device,
+            batch_node_index=batch_node_index,
+            batch_edge_index=batch_edge_index,
+            size=size,
+        )
 
     def __len__(self) -> int:
         """The number of individual :class:`Graph`s in this batch"""
         return self.__size
 
     def to(self, device: Device) -> Self:
+        self.__device = device
+
         self.V = self.V.to(device)
         self.E = self.E.to(device)
         self.edge_index = self.edge_index.to(device)

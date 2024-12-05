@@ -1,5 +1,5 @@
-from omegaconf import DictConfig, OmegaConf
 import hydra
+from omegaconf import DictConfig, OmegaConf
 
 import mol_gnn
 from mol_gnn.types import LRSchedConfig

@@ -17,9 +17,6 @@ class GraphEmbedding(nn.Module):
         self.node = nn.EmbeddingBag(num_node_types, hidden_dim, mode="sum")
         self.edge = nn.EmbeddingBag(num_edge_types, hidden_dim, mode="sum")
 
-        self.num_node_types = num_node_types
-        self.num_edge_types = num_edge_types
-
     def forward(self, G: Graph) -> Graph:
         G = copy(G)
         G.V = self.embed["node"](G.V)
