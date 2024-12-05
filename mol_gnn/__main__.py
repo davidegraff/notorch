@@ -1,4 +1,4 @@
-if __name__ == "__main__":
-    import runpy
+import runpy
 
-    runpy.run_module("mol_gnn.cli", run_name="__main__")
+print("hell world!")
+runpy.run_module("mol_gnn.cli", run_name="__main__")

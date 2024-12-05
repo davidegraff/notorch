@@ -39,10 +39,12 @@ dependencies = [
     "hydra-core>=1.3.2",
     "omegaconf>=2.3.0",
     "click>=8.1.7",
+    "hydra-colorlog>=1.2.0",
+    "rich>=13.9.4",
 ]
 
 [project.scripts]
-mol-gnn = "mol_gnn.cli.main:main"
+mol_gnn-train = "mol_gnn.cli.train:train"
 
 [dependency-groups]
 dev = [

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Callable, Literal
 
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, LRScheduler
@@ -6,22 +6,15 @@ from torch.optim.lr_scheduler import LambdaLR, LRScheduler
 from mol_gnn.types import LRSchedConfig
 
 
-def configure_lr_scheduler(
-    scheduler: LRScheduler,
-    interval: Literal["step", "epoch"] = "epoch",
-    frequency: int = 1,
-    monitor: str = "val_loss",
-    strict: bool = True,
-    name: str | None = None,
-) -> LRSchedConfig:
-    return dict(
-        scheduler=scheduler,
-        interval=interval,
-        frequency=frequency,
-        monitor=monitor,
-        strict=strict,
-        name=name,
-    )
+def meta_lr_sched_factory(
+    lr_sched_factory: Callable[[Optimizer], LRScheduler],
+    config: LRSchedConfig,
+) -> Callable[[Optimizer], LRSchedConfig]:
+    def fun(optim: Optimizer):
+        return config | {"scheduler": lr_sched_factory(optim)}
+
+    return fun
+
 
 
 def NoamLikeLRSched(
