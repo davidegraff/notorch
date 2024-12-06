@@ -5,7 +5,8 @@ from typing import Callable
 import lightning as L
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
-from torch import Tensor, nn
+import torch.nn as nn
+from torch import Tensor
 from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
@@ -77,8 +78,12 @@ class SimpleModel(L.LightningModule):
         super().__init__()
 
         modules = [
-            TensorDictModule(module, in_keys, [(name, key) for key in out_keys])
-            for name, (module, in_keys, out_keys) in model_config.items()
+            TensorDictModule(
+                module_config["module"],
+                module_config["in_keys"],
+                [(name, key) for key in module_config["out_keys"]],
+            )
+            for name, module_config in model_config.items()
         ]
 
         selected_out_keys = []
@@ -98,7 +103,7 @@ class SimpleModel(L.LightningModule):
         if keep_all_output:
             selected_out_keys = None
 
-        self.model = TensorDictSequential(modules, selected_out_keys=selected_out_keys)
+        self.model = TensorDictSequential(*modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
         self.optim_factory = optim_factory

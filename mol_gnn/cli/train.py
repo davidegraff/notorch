@@ -11,8 +11,6 @@ from mol_gnn.schedulers import meta_lr_sched_factory
 
 log = logging.getLogger(__name__)
 
-hydra.conf.ConfigStore
-
 
 @hydra.main(config_path="configs", config_name="train", version_base=None)
 def train(cfg: DictConfig):
