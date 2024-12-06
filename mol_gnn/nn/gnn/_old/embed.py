@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 
 import torch
-from torch import Tensor, nn
+import torch.nn as nn
 
 from mol_gnn.conf import DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM, DEFAULT_HIDDEN_DIM
 from mol_gnn.utils.registry import ClassRegistry

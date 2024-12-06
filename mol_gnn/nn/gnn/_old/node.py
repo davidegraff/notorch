@@ -1,5 +1,5 @@
 import torch
-from torch import Tensor, nn
+import torch.nn as nn
 
 from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.nn.gnn.agg import Aggregation, NodeAggregation

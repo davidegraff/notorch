@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 import torch
-from torch import Tensor, nn
+import torch.nn as nn
 
 from mol_gnn.utils.registry import ClassRegistry
 

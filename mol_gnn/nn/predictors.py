@@ -2,8 +2,9 @@ from abc import abstractmethod
 
 from lightning.pytorch.core.mixins import HyperparametersMixin
 import torch
-from torch import Tensor, nn
-from torch.nn import functional as F
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.nn.loss import *

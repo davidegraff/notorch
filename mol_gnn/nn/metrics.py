@@ -3,9 +3,10 @@ from typing import Literal
 from jaxtyping import Bool, Float
 from numpy.typing import ArrayLike
 import torch
-from torch import Tensor, nn
-from torch.nn import functional as F
-from torchmetrics.functional import classification
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
+import torchmetrics.functional.classification as classification
 
 from mol_gnn.nn.loss import _BoundedMixin, _LossFunctionBase
 from mol_gnn.utils import ClassRegistry

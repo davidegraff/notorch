@@ -4,7 +4,7 @@ from typing import Iterable
 
 from lightning import pytorch as pl
 import torch
-from torch import Tensor, nn, optim
+impot torch.nn as nonlocal, optim
 
 from mol_gnn.data.models.batch import MpnnBatch
 from mol_gnn.data.models.graph import BatchedGraph

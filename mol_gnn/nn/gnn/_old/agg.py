@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from torch import Tensor, nn
+import torch.nn as nn
 
 from mol_gnn.nn.gnn.agg import Aggregation
 
