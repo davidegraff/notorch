@@ -2,9 +2,9 @@ import torch
 from torch import Tensor, nn
 
 from mol_gnn.nn.gnn.agg import Aggregation
+from mol_gnn.nn.message_passing.base import MessagePassing
 from mol_gnn.nn.message_passing.embed import InputEmbedding, OutputEmbedding
 from mol_gnn.nn.message_passing.message import MessageFunction
-from mol_gnn.nn.message_passing.base import MessagePassing
 from mol_gnn.nn.message_passing.update import UpdateFunction
 
 

@@ -5,8 +5,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.preprocessing import StandardScaler
 
-from mol_gnn.types import Mol
 from mol_gnn.featurizers.vector.base import VectorFeaturizer
+from mol_gnn.types import Mol
 
 
 @dataclass(slots=True)

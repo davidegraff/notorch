@@ -1,4 +1,4 @@
-from typing import Callable, Generic, Protocol, TypedDict, TypeVar, Self
+from typing import Callable, Generic, Protocol, Self, TypedDict, TypeVar
 
 T = TypeVar("T")
 

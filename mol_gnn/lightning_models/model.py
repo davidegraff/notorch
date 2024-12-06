@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import Callable
 
 import lightning as L
-from torch import Tensor, nn
-from torch.optim import Adam, Optimizer
-from torch.optim.optimizer import ParamsT
-from torch.optim.lr_scheduler import LRScheduler
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
+from torch import Tensor, nn
+from torch.optim import Adam, Optimizer
+from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.optimizer import ParamsT
 
-from mol_gnn.types import LRSchedConfig, ModelModuleConfig, LossModuleConfig
+from mol_gnn.types import LossModuleConfig, LRSchedConfig, ModelModuleConfig
 
 
 class SimpleModel(L.LightningModule):

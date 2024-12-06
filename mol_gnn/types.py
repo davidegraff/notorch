@@ -1,7 +1,7 @@
 # ruff: noqa: F401
 from typing import Callable, Literal, Required, TypedDict
 
-from rdkit.Chem import Mol, Atom, Bond
+from rdkit.Chem import Atom, Bond, Mol
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Hashable, Mapping, Sequence
-from typing import Literal, overload, TypeVar
+from typing import Literal, TypeVar, overload
 
 KT = TypeVar("KT", bound=Hashable)
 T = TypeVar("T")

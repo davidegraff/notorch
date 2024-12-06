@@ -7,14 +7,12 @@ from mol_gnn.types import LRSchedConfig
 
 
 def meta_lr_sched_factory(
-    lr_sched_factory: Callable[[Optimizer], LRScheduler],
-    config: LRSchedConfig,
+    lr_sched_factory: Callable[[Optimizer], LRScheduler], config: LRSchedConfig
 ) -> Callable[[Optimizer], LRSchedConfig]:
     def fun(optim: Optimizer):
         return config | {"scheduler": lr_sched_factory(optim)}
 
     return fun
-
 
 
 def NoamLikeLRSched(

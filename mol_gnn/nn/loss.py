@@ -1,5 +1,5 @@
-from numpy.typing import ArrayLike
 from jaxtyping import Bool, Float
+from numpy.typing import ArrayLike
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F

@@ -6,10 +6,10 @@ from rdkit import Chem
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import Dataset
 
-from mol_gnn.data.models.datum import Datum
-from mol_gnn.types import Mol
-from mol_gnn.transforms.chem import make_mol
 from mol_gnn.data.datasets.mixins import _DatapointMixin, _MolGraphDatasetMixin
+from mol_gnn.data.models.datum import Datum
+from mol_gnn.transforms.chem import make_mol
+from mol_gnn.types import Mol
 
 
 @dataclass

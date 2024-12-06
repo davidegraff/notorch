@@ -6,8 +6,8 @@ from tensordict import TensorDict, tensorclass
 import torch
 from torch import Tensor
 
-from mol_gnn.data.models.sample import Sample
 from mol_gnn.data.models.graph import BatchedGraph
+from mol_gnn.data.models.sample import Sample
 
 
 @tensorclass

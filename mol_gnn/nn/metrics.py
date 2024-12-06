@@ -1,7 +1,7 @@
 from typing import Literal
 
-from numpy.typing import ArrayLike
 from jaxtyping import Bool, Float
+from numpy.typing import ArrayLike
 import torch
 from torch import Tensor, nn
 from torch.nn import functional as F
@@ -9,7 +9,6 @@ from torchmetrics.functional import classification
 
 from mol_gnn.nn.loss import _BoundedMixin, _LossFunctionBase
 from mol_gnn.utils import ClassRegistry
-
 
 MetricRegistry = ClassRegistry()
 

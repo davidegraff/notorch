@@ -1,6 +1,6 @@
 from typing import Iterable, NamedTuple, Self
 
-from jaxtyping import Float, Bool
+from jaxtyping import Bool, Float
 import torch
 from torch import Tensor
 from torch.types import Device

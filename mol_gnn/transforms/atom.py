@@ -10,7 +10,7 @@ from torch import Tensor
 from torch.nn import functional as F
 
 from mol_gnn.transforms.base import Transform
-from mol_gnn.transforms.utils.index_map import build, IndexMapWithUnknown
+from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
 
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
 DEGREES = [0, 1, 2, 3]

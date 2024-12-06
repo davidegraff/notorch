@@ -1,8 +1,8 @@
 from collections.abc import Callable
 from typing import TypeVar
 
-from torch import nn
 import torch
+from torch import nn
 
 T = TypeVar("T", bound=nn.Module)
 
