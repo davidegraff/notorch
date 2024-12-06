@@ -1,11 +1,13 @@
-from torch import nn
+import torch.nn as nn
+
+from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 
 
 def MLP(
     input_dim: int,
     output_dim: int,
-    hidden_dim: int = 300,
-    n_layers: int = 1,
+    hidden_dim: int = DEFAULT_HIDDEN_DIM,
+    num_layers: int = 1,
     dropout: float = 0.0,
     activation: type[nn.Module] = nn.ReLU,
 ) -> nn.Sequential:
@@ -27,7 +29,7 @@ def MLP(
     dropout = nn.Dropout(dropout)
     act = activation()
 
-    dims = [input_dim] + [hidden_dim] * n_layers + [output_dim]
+    dims = [input_dim] + [hidden_dim] * num_layers + [output_dim]
     blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
     layers = sum(blocks, [])
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import copy
 from typing import Literal
 
-from torch import nn
+import torch.nn as nn
 
 from mol_gnn.data.models.graph import Graph
 
