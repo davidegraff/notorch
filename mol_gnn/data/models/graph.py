@@ -1,4 +1,4 @@
-from dataclasses import KW_ONLY, InitVar, dataclass, field
+from dataclasses import InitVar, dataclass, field
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int

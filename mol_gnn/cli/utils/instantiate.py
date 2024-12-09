@@ -1,7 +1,7 @@
 from collections.abc import Iterable, Mapping
 
 import hydra
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from mol_gnn.types import LossConfig, ModuleConfig, TensorDictKey
 
@@ -13,7 +13,7 @@ def instantiate_in_keys(in_keys: Iterable[TensorDictKey] | Mapping[TensorDictKey
     return [tuple(key.split(".")) for key in in_keys]
 
 
-def instantiate_module_config(module_config) -> ModuleConfig:
+def instantiate_module_config(module_config: DictConfig) -> ModuleConfig:
     return ModuleConfig(
         hydra.utils.instantiate(module_config["module"]),
         instantiate_in_keys(OmegaConf.to_container(module_config["in_keys"])),

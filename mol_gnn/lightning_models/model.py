@@ -23,7 +23,7 @@ class SimpleModel(L.LightningModule):
     Parameters
     ----------
     model_config : dict[str, ModelModuleConfig]
-        A mapping from a name to a dictionary with the keys:
+        A mapping from a name to a 3-tuple containing:
 
         * ``module``: the :class:`~torch.nn.Module` that will be wrapped inside a
         :class:`~tensordict.nn.TensorDictModule`.
@@ -40,7 +40,7 @@ class SimpleModel(L.LightningModule):
             the key corresponding to the 3-tuple)
 
     loss_config : dict[str, LossModuleConfig]
-        A mapping from a name to a dictionary containing keys:
+        A mapping from a name to a 3-tuple containing:
 
         - ``weight``: a float for the term's weight in the total loss
         - ``module``: a callable that returns a single tensor
@@ -53,7 +53,7 @@ class SimpleModel(L.LightningModule):
         details on the ``in_keys`` key, see :attr:`model_config`.
 
     metric_config : dict[str, LossModuleConfig]
-        A mapping from a name to a dictionary containing keys:
+        A mapping from a name to a 3-tuple containing:
 
         - ``weight``: a float for the term's weight in the total validation loss
         - ``module``: a callable that returns a single tensor
@@ -82,22 +82,21 @@ class SimpleModel(L.LightningModule):
             for name, (module, in_keys, out_keys) in module_configs.items()
         ]
 
-        selected_out_keys = []
+        selected_out_keys = set()
         loss_modules = []
         for name, (weight, module, in_keys) in loss_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("loss", name)])
             wrapped_module._weight = weight
             loss_modules.append(wrapped_module)
-            selected_out_keys += in_keys
+            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
         metric_modules = []
         for name, (weight, module, in_keys) in metric_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("metric", name)])
             wrapped_module._weight = weight
             metric_modules.append(wrapped_module)
-            selected_out_keys += in_keys
+            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
 
-        if keep_all_output:
-            selected_out_keys = None
+        selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
         self.model = TensorDictSequential(*modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
