@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sized
+from typing import Protocol
 
 from jaxtyping import Int
-from rdkit.Chem import Bond
 from rdkit.Chem.rdchem import BondStereo, BondType
 import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.base import Transform
+from mol_gnn.types import Bond
 from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
@@ -24,26 +24,26 @@ BOND_STEREOS = [
 ]
 
 
-class TypeOnlyTransform(Sized, Transform[Iterable[Bond], Int[Tensor, "E 1"]]):
+class BondTransform(Protocol):
+    def __len__(self): ...
+
+    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "n t"]: ...
+
+
+class BondTypeOnlyTransform(Sized):
     def __init__(self, bond_types: Iterable[BondType] = BOND_TYPES):
         self.bond_type_map = IndexMapWithUnknown(bond_types)
 
     def __len__(self) -> int:
         return len(self.bond_type_map)
 
-    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "*n d"]:
+    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "n 1"]:
         types = [[self.bond_type_map[bond.GetBondType()]] for bond in input]
 
         return torch.tensor(types)
 
-    # @singledispatchmethod
-    # def __call__(self, input: Bond) -> Int[Tensor, "d"]:
-    #     types = [self.bond_type_map[input.GetBondType()]]
 
-    #     return torch.tensor(types)
-
-
-class MultiTypeBondTransform(Sized, Transform[Iterable[Bond], Int[Tensor, "E t"]]):
+class MultiTypeBondTransform(Sized):
     def __init__(
         self,
         bond_types: Iterable[BondType] | None = BOND_TYPES,
@@ -74,13 +74,7 @@ class MultiTypeBondTransform(Sized, Transform[Iterable[Bond], Int[Tensor, "E t"]
 
         return types
 
-    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "E t"]:
+    def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "n t"]:
         types = [self._transform_single(bond) for bond in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
-
-    # @singledispatchmethod
-    # def __call__(self, input: Bond) -> Int[Tensor, "d"]:
-    #     types = self._transform_single(input)
-
-    #     return torch.tensor(types) + self.offset

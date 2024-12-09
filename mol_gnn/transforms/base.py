@@ -1,10 +1,7 @@
 from abc import abstractmethod
-from collections.abc import Iterable, Sequence, Sized
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import overload
-
-from jaxtyping import Num
-from torch import Tensor
 
 
 class Transform[S, T]:
@@ -19,17 +16,16 @@ class Transform[S, T]:
         pass
 
 
-class TensorTransform[S](Sized, Transform[S, Num[Tensor, "*n d"]]):
-    """A :class:`TensorTransform` transforms inputs into tensors."""
+@dataclass
+class Pipeline[S, T](Transform):
+    transforms: Sequence[Transform]
 
-    @abstractmethod
-    def __call__(self, input: S | Iterable[S]) -> Num[Tensor, "*n d"]:
-        pass
+    def __call__(self, input: S) -> T:
+        output = input
+        for transform in self.transforms:
+            output = transform(output)
 
-
-class Pipeline[S, T](Transform[S, T]):
-    def __call__(self, input):
-        return super().__call__(input)
+        return output
 
     # @abstractmethod
     # def __call__(self, input):
