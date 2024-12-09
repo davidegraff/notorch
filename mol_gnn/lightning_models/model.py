@@ -11,7 +11,7 @@ from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
 
-from mol_gnn.types import LossModuleConfig, LRSchedConfig, ModelModuleConfig
+from mol_gnn.types import LossConfig, LRSchedConfig, ModuleConfig
 
 
 class SimpleModel(L.LightningModule):
@@ -68,9 +68,9 @@ class SimpleModel(L.LightningModule):
 
     def __init__(
         self,
-        model_config: dict[str, ModelModuleConfig],
-        loss_config: dict[str, LossModuleConfig],
-        metric_config: dict[str, LossModuleConfig],
+        module_configs: dict[str, ModuleConfig],
+        loss_configs: dict[str, LossConfig],
+        metric_configs: dict[str, LossConfig],
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
         keep_all_output: bool = False,
@@ -78,23 +78,19 @@ class SimpleModel(L.LightningModule):
         super().__init__()
 
         modules = [
-            TensorDictModule(
-                module_config["module"],
-                module_config["in_keys"],
-                [(name, key) for key in module_config["out_keys"]],
-            )
-            for name, module_config in model_config.items()
+            TensorDictModule(module, in_keys, [(name, key) for key in out_keys])
+            for name, (module, in_keys, out_keys) in module_configs.items()
         ]
 
         selected_out_keys = []
         loss_modules = []
-        for name, (weight, module, in_keys) in loss_config.items():
+        for name, (weight, module, in_keys) in loss_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("loss", name)])
             wrapped_module._weight = weight
             loss_modules.append(wrapped_module)
             selected_out_keys += in_keys
         metric_modules = []
-        for name, (weight, module, in_keys) in metric_config.items():
+        for name, (weight, module, in_keys) in metric_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("metric", name)])
             wrapped_module._weight = weight
             metric_modules.append(wrapped_module)
