@@ -3,11 +3,11 @@ from dataclasses import dataclass
 import numpy as np
 from rdkit import Chem
 from sklearn.preprocessing import StandardScaler
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
-from mol_gnn.data.models.datum import Datum
 from mol_gnn.data.datasets.molecule import MoleculeDataset
 from mol_gnn.data.datasets.reaction import ReactionDataset
+from mol_gnn.data.models.datum import Datum
 
 
 @dataclass(repr=False, eq=False)

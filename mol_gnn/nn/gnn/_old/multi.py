@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from torch import Tensor, nn
+import torch.nn as nn
 
 from mol_gnn.nn.message_passing.base import MessagePassing, MessagePassingInput
 

@@ -4,8 +4,8 @@ import torch
 from torch import Tensor
 
 from mol_gnn.data.models.graph import BatchedGraph
-from mol_gnn.nn import MultiInputMessagePassing, Aggregation, Predictor
 from mol_gnn.lightning_models.mpnn import MPNN
+from mol_gnn.nn import Aggregation, MultiInputMessagePassing, Predictor
 from mol_gnn.nn.metrics import Metric
 
 

@@ -4,11 +4,13 @@ from typing import Iterable
 
 from lightning import pytorch as pl
 import torch
-from torch import nn, Tensor, optim
+import torch.nn as nn
+import torch.optim as optim
+from torch import Tensor
 
-from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.data.models.batch import MpnnBatch
-from mol_gnn.nn import Predictor, LossFunction
+from mol_gnn.data.models.graph import BatchedGraph
+from mol_gnn.nn import LossFunction, Predictor
 from mol_gnn.nn.encoder import GraphEncoder
 from mol_gnn.nn.metrics import Metric
 from mol_gnn.schedulers import NoamLR

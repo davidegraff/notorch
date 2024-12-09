@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from rdkit import Chem
 
 from mol_gnn.transforms.base import Transform

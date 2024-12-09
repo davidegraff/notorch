@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import numpy as np
 from typing import Self
 
+import numpy as np
 from rdkit import Chem
 
-from mol_gnn.data.models.datum import Datum
-from mol_gnn.types import Mol, Rxn
-from mol_gnn.featurizers import VectorFeaturizer, GraphFeaturizer, CGRFeaturizer
-from mol_gnn.data.datasets.molecule import _MolGraphDatasetMixin
 from mol_gnn.data.datasets.mixins import _DatapointMixin
+from mol_gnn.data.datasets.molecule import _MolGraphDatasetMixin
+from mol_gnn.data.models.datum import Datum
+from mol_gnn.featurizers import CGRFeaturizer, GraphFeaturizer, VectorFeaturizer
 from mol_gnn.transforms.chem import make_mol
+from mol_gnn.types import Mol, Rxn
 
 
 @dataclass

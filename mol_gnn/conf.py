@@ -1,6 +1,6 @@
 """Global configuration variables for mol_gnn"""
 
-DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM = MolGraphFeaturizer().shape
+DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM = 100, 20  # MolGraphFeaturizer().shape
 DEFAULT_HIDDEN_DIM = 256
 DEFAULT_OUTPUT_DIM = DEFAULT_HIDDEN_DIM
 

@@ -4,13 +4,13 @@ from collections.abc import Iterable, Sized
 
 from jaxtyping import Int
 from rdkit.Chem import Bond
-from rdkit.Chem.rdchem import BondType, BondStereo
+from rdkit.Chem.rdchem import BondStereo, BondType
 import torch
 from torch import Tensor
 from torch.nn import functional as F
 
 from mol_gnn.transforms.base import Transform
-from mol_gnn.transforms.utils.index_map import build, IndexMapWithUnknown
+from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
 BOND_STEREOS = [

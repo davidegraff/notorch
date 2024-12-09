@@ -39,16 +39,19 @@ dependencies = [
     "hydra-core>=1.3.2",
     "omegaconf>=2.3.0",
     "click>=8.1.7",
+    "hydra-colorlog>=1.2.0",
+    "rich>=13.9.4",
 ]
 
 [project.scripts]
-mol-gnn = "mol_gnn.cli.main:main"
+mol_gnn-train = "mol_gnn.cli.train:train"
 
 [dependency-groups]
 dev = [
     "flake8>=7.1.1",
     "ipykernel>=6.29.5",
     "ipython>=8.29.0",
+    "isort>=5.13.2",
     "pytest>=8.3.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.8.0",
@@ -68,9 +71,10 @@ package = true
 [tool.uv.sources]
 torch-scatter = { url = "https://data.pyg.org/whl/torch-2.5.0%2Bcpu/torch_scatter-2.1.2-cp312-cp312-macosx_10_13_universal2.whl", marker = "sys_platform == 'darwin'" }
 
-[tool.black]
-line-length = 100
-target-version = ["py312"]
+[tool.isort]
+force_sort_within_sections = true
+profile = "black"
+src_paths = ["mol_gnn"]
 
 [tool.ruff]
 line-length = 100

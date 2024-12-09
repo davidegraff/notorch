@@ -7,7 +7,6 @@ from torch.nn import functional as F
 
 from mol_gnn.utils import ClassRegistry, ReprMixin
 
-
 __all__ = [
     "LossFunction",
     "MSELoss",

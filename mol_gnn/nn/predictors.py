@@ -2,13 +2,14 @@ from abc import abstractmethod
 
 from lightning.pytorch.core.mixins import HyperparametersMixin
 import torch
-from torch import nn, Tensor
-from torch.nn import functional as F
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
 
-from mol_gnn.nn.mlp import MLP
+from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.nn.loss import *
 from mol_gnn.nn.metrics import *
-from mol_gnn.conf import DEFAULT_HIDDEN_DIM
+from mol_gnn.nn.mlp import MLP
 from mol_gnn.utils import ClassRegistry, HasHParams
 
 __all__ = [
@@ -103,7 +104,7 @@ class _FFNPredictorBase(Predictor, HyperparametersMixin):
 @PredictorRegistry.register("regression")
 class RegressionFFN(_FFNPredictorBase):
     n_targets = 1
-    _default_criterion = MSELoss()
+    _default_criterion = MSE()
     _default_metric = MSEMetric()
 
     def __init__(
@@ -135,7 +136,7 @@ class RegressionFFN(_FFNPredictorBase):
 @PredictorRegistry.register("regression-mve")
 class MveFFN(RegressionFFN):
     n_targets = 2
-    _default_criterion = MVELoss()
+    _default_criterion = MeanVarianceEstimation()
 
     def forward(self, Z: Tensor) -> Tensor:
         Y = super().forward(Z)
@@ -157,7 +158,7 @@ class MveFFN(RegressionFFN):
 @PredictorRegistry.register("regression-evidential")
 class EvidentialFFN(RegressionFFN):
     n_targets = 4
-    _default_criterion = EvidentialLoss()
+    _default_criterion = Evidential()
 
     def forward(self, Z: Tensor) -> Tensor:
         Y = super().forward(Z)
@@ -186,7 +187,7 @@ class BinaryClassificationFFNBase(_FFNPredictorBase):
 @PredictorRegistry.register("classification")
 class BinaryClassificationFFN(BinaryClassificationFFNBase):
     n_targets = 1
-    _default_criterion = BCELoss()
+    _default_criterion = BCE()
     # _default_metric = AUROCMetric()  # TODO: AUROCMetric default causes error
 
     def forward(self, Z: Tensor) -> Tensor:
@@ -219,7 +220,7 @@ class BinaryDirichletFFN(BinaryClassificationFFNBase):
 @PredictorRegistry.register("multiclass")
 class MulticlassClassificationFFN(_FFNPredictorBase):
     n_targets = 1
-    _default_criterion = CrossEntropyLoss()
+    _default_criterion = CrossEntropy()
     _default_metric = CrossEntropyMetric()
 
     def __init__(

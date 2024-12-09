@@ -1,6 +1,8 @@
-from jaxtyping import ArrayLike, Float
+from jaxtyping import Float
+from numpy.typing import ArrayLike
 import torch
-from torch import Tensor, nn
+import torch.nn as nn
+from torch import Tensor
 
 
 class _AffineTransformBase(nn.Module):

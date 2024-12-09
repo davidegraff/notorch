@@ -2,15 +2,15 @@ from math import sqrt
 from typing import Annotated
 
 from jaxtyping import Float
-from torch import Tensor, nn
 import torch
-from torch_scatter import scatter_max, scatter_mean, scatter_sum, scatter_softmax
+import torch.nn as nn
+from torch import Tensor
+from torch_scatter import scatter_max, scatter_mean, scatter_softmax, scatter_sum
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.data.models.graph import BatchedGraph
 from mol_gnn.nn.gnn.base import Aggregation
 from mol_gnn.utils.registry import ClassRegistry
-
 
 AggregationRegistry = ClassRegistry[Aggregation]()
 

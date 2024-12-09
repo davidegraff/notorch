@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import copy
 from typing import Literal
 
-from torch import nn
+import torch.nn as nn
 
 from mol_gnn.data.models.graph import Graph
 
@@ -16,9 +16,6 @@ class GraphEmbedding(nn.Module):
 
         self.node = nn.EmbeddingBag(num_node_types, hidden_dim, mode="sum")
         self.edge = nn.EmbeddingBag(num_edge_types, hidden_dim, mode="sum")
-
-        self.num_node_types = num_node_types
-        self.num_edge_types = num_edge_types
 
     def forward(self, G: Graph) -> Graph:
         G = copy(G)

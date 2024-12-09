@@ -3,14 +3,15 @@ from __future__ import annotations
 from typing import Callable
 
 import lightning as L
-from torch import Tensor, nn
-from torch.optim import Adam, Optimizer
-from torch.optim.optimizer import ParamsT
-from torch.optim.lr_scheduler import LRScheduler
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
+import torch.nn as nn
+from torch import Tensor
+from torch.optim import Adam, Optimizer
+from torch.optim.lr_scheduler import LRScheduler
+from torch.optim.optimizer import ParamsT
 
-from mol_gnn.types import LRSchedConfig, ModelModuleConfig, LossModuleConfig
+from mol_gnn.types import LossConfig, LRSchedConfig, ModuleConfig
 
 
 class SimpleModel(L.LightningModule):
@@ -22,7 +23,7 @@ class SimpleModel(L.LightningModule):
     Parameters
     ----------
     model_config : dict[str, ModelModuleConfig]
-        A mapping from a name to a dictionary with the keys:
+        A mapping from a name to a 3-tuple containing:
 
         * ``module``: the :class:`~torch.nn.Module` that will be wrapped inside a
         :class:`~tensordict.nn.TensorDictModule`.
@@ -39,7 +40,7 @@ class SimpleModel(L.LightningModule):
             the key corresponding to the 3-tuple)
 
     loss_config : dict[str, LossModuleConfig]
-        A mapping from a name to a dictionary containing keys:
+        A mapping from a name to a 3-tuple containing:
 
         - ``weight``: a float for the term's weight in the total loss
         - ``module``: a callable that returns a single tensor
@@ -52,7 +53,7 @@ class SimpleModel(L.LightningModule):
         details on the ``in_keys`` key, see :attr:`model_config`.
 
     metric_config : dict[str, LossModuleConfig]
-        A mapping from a name to a dictionary containing keys:
+        A mapping from a name to a 3-tuple containing:
 
         - ``weight``: a float for the term's weight in the total validation loss
         - ``module``: a callable that returns a single tensor
@@ -67,9 +68,9 @@ class SimpleModel(L.LightningModule):
 
     def __init__(
         self,
-        model_config: dict[str, ModelModuleConfig],
-        loss_config: dict[str, LossModuleConfig],
-        metric_config: dict[str, LossModuleConfig],
+        module_configs: dict[str, ModuleConfig],
+        loss_configs: dict[str, LossConfig],
+        metric_configs: dict[str, LossConfig],
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
         keep_all_output: bool = False,
@@ -78,27 +79,26 @@ class SimpleModel(L.LightningModule):
 
         modules = [
             TensorDictModule(module, in_keys, [(name, key) for key in out_keys])
-            for name, (module, in_keys, out_keys) in model_config.items()
+            for name, (module, in_keys, out_keys) in module_configs.items()
         ]
 
-        selected_out_keys = []
+        selected_out_keys = set()
         loss_modules = []
-        for name, (weight, module, in_keys) in loss_config.items():
+        for name, (weight, module, in_keys) in loss_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("loss", name)])
             wrapped_module._weight = weight
             loss_modules.append(wrapped_module)
-            selected_out_keys += in_keys
+            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
         metric_modules = []
-        for name, (weight, module, in_keys) in metric_config.items():
+        for name, (weight, module, in_keys) in metric_configs.items():
             wrapped_module = TensorDictModule(module, in_keys, [("metric", name)])
             wrapped_module._weight = weight
             metric_modules.append(wrapped_module)
-            selected_out_keys += in_keys
+            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
 
-        if keep_all_output:
-            selected_out_keys = None
+        selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
-        self.model = TensorDictSequential(modules, selected_out_keys=selected_out_keys)
+        self.model = TensorDictSequential(*modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
         self.optim_factory = optim_factory

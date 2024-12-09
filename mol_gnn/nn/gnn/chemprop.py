@@ -1,8 +1,9 @@
 from __future__ import annotations
+
 from copy import copy
 from typing import Literal
 
-from torch import nn
+import torch.nn as nn
 from torch_scatter import scatter
 
 from mol_gnn.data.models.graph import Graph
@@ -47,8 +48,6 @@ class ChempropBlock(nn.Module):
 
     def __init__(
         self,
-        num_node_types: int,
-        num_edge_types: int,
         hidden_dim: int = 256,
         act: type[nn.Module] = nn.ReLU,
         bias: bool = True,
@@ -74,19 +73,10 @@ class ChempropBlock(nn.Module):
                 for layer in layers
             ]
 
-        self.embed = nn.ModuleDict(
-            {
-                "node": nn.EmbeddingBag(num_node_types, hidden_dim, mode="sum"),
-                "edge": nn.EmbeddingBag(num_edge_types, hidden_dim, mode="sum"),
-            }
-        )
         self.block = nn.Sequential(*layers)
-
-        self.num_node_types = num_node_types
-        self.num_edge_types = num_edge_types
         self.hidden_dim = hidden_dim
         self.reduce = reduce
-        self.depth = len(self.layers)
+        self.depth = len(self.block)
 
     def forward(self, G: Graph) -> Graph:
         G_t = copy(G)

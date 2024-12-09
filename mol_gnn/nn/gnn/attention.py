@@ -1,6 +1,6 @@
 from typing import Literal
 
-from torch import nn, einsum
+from torch import einsum, nn
 from torch_scatter import scatter, scatter_softmax
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM

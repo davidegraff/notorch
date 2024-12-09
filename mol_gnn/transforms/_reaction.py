@@ -8,8 +8,8 @@ from rdkit import Chem
 
 from mol_gnn.data.models.graph import Graph
 from mol_gnn.transforms.base import TensorTransform
-from mol_gnn.utils.utils import EnumMapping
 from mol_gnn.types import Atom, Bond, Mol, Rxn
+from mol_gnn.utils.utils import EnumMapping
 
 
 class RxnMode(EnumMapping):
