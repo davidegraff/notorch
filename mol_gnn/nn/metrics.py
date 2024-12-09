@@ -3,6 +3,8 @@ from typing import Literal
 from jaxtyping import Bool, Float
 from numpy.typing import ArrayLike
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
