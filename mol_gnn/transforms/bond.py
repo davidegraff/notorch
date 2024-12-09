@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sized
+from collections.abc import Iterable
 from typing import Protocol
 
 from jaxtyping import Int
@@ -9,8 +9,8 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.types import Bond
 from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
+from mol_gnn.types import Bond
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
 BOND_STEREOS = [

@@ -5,8 +5,8 @@ from typing import Callable
 import lightning as L
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
-import torch.nn as nn
 from torch import Tensor
+import torch.nn as nn
 from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT

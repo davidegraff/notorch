@@ -96,5 +96,5 @@ def test_overfitting(dataloader, mp: nn.MessagePassing):
 
     errors = torch.cat(errors)
     mse = errors.square().mean().item()
-    
+
     assert mse <= 0.01

@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Protocol
 
 
-
 class Transform[S, T, T_batched](Protocol):
     def __call__(self, input: T) -> S: ...
 

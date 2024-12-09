@@ -2,8 +2,9 @@ from abc import abstractmethod
 from typing import Annotated
 
 from jaxtyping import Float
-import torch.nn as nn
 from torch import Tensor
+import torch.nn as nn
+
 from mol_gnn.data.models.graph import BatchedGraph, Graph
 
 

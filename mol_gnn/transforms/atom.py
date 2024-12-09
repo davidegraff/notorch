@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence, Sized
+from collections.abc import Iterable, Sequence
 from typing import Protocol
 
 from jaxtyping import Int
@@ -9,8 +9,8 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.types import Atom
 from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
+from mol_gnn.types import Atom
 
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
 DEGREES = [0, 1, 2, 3]

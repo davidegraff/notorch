@@ -1,7 +1,6 @@
 import logging
 
 import hydra
-from hydra.core.config_store import ConfigStore
 import lightning as L
 from omegaconf import DictConfig
 from rich import print

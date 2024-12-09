@@ -3,8 +3,8 @@ from typing import Annotated
 
 from jaxtyping import Float
 import torch
-import torch.nn as nn
 from torch import Tensor
+import torch.nn as nn
 from torch_scatter import scatter_max, scatter_mean, scatter_softmax, scatter_sum
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
