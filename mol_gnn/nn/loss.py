@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from jaxtyping import Bool, Float
 from numpy.typing import ArrayLike
 import torch
@@ -8,31 +9,26 @@ from torch import Tensor
 from mol_gnn.utils import ClassRegistry
 
 
-class _BoundedMixin:
-    def forward(
-        self,
-        preds: Float[Tensor, "b t"],
-        targets: Float[Tensor, "b t"],
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
-        lt_mask: Bool[Tensor, "b t"],
-        gt_mask: Bool[Tensor, "b t"],
-    ) -> Float[Tensor, ""]:
-        preds = torch.where((preds < targets) & lt_mask, targets, preds)
-        preds = torch.where((preds > targets) & gt_mask, targets, preds)
-
-        return super().forward(preds, targets, mask, sample_weights)
-
-
 class _LossFunctionBase(nn.Module):
-    task_weights: Float[Tensor, "1 t"]
+    task_weights: Float[Tensor, "1 #t"]
 
-    def __init__(self, task_weights: Float[ArrayLike, "t"]) -> None:
+    def __init__(self, task_weights: Float[ArrayLike, "*t"] = 1.0) -> None:
         super().__init__()
 
         self.task_weights = self.register_buffer(
-            "task_weights", torch.as_tensor(task_weights).unsqueeze(0)
+            "task_weights", torch.atleast_2d(torch.as_tensor(task_weights))
         )
+
+    @abstractmethod
+    def forward(
+        self,
+        preds: Float[Tensor, "b t ..."],
+        targets: Float[Tensor, "b t ..."],
+        *,
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+    ) -> Float[Tensor, ""]:
+        pass
 
     def _reduce(
         self,
@@ -45,24 +41,33 @@ class _LossFunctionBase(nn.Module):
         return (loss * mask).sum() / mask.sum()
 
 
-LossFunctionRegistry = ClassRegistry()
-
-
-@LossFunctionRegistry.register("mse")
-class MSELoss(_LossFunctionBase):
-    task_weights: Float[Tensor, "1 t"]
-
-    def __init__(self, task_weights: Float[ArrayLike, "t"]) -> None:
-        super().__init__()
-
-        self.task_weights = self.register_buffer(
-            "task_weights", torch.as_tensor(task_weights).unsqueeze(0)
-        )
-
+class _BoundedMixin:
     def forward(
         self,
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
+        *,
+        mask: Bool[Tensor, "b t"],
+        sample_weights: Float[Tensor, "b"],
+        lt_mask: Bool[Tensor, "b t"],
+        gt_mask: Bool[Tensor, "b t"],
+    ) -> Float[Tensor, ""]:
+        preds = torch.where((preds < targets) & lt_mask, targets, preds)
+        preds = torch.where((preds > targets) & gt_mask, targets, preds)
+
+        return super().forward(preds, targets, mask, sample_weights)
+
+
+LossFunctionRegistry = ClassRegistry()
+
+
+@LossFunctionRegistry.register("mse")
+class MSE(_LossFunctionBase):
+    def forward(
+        self,
+        preds: Float[Tensor, "b t"],
+        targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -72,12 +77,12 @@ class MSELoss(_LossFunctionBase):
 
 
 @LossFunctionRegistry.register("bounded-mse")
-class BoundedMSELoss(_BoundedMixin, MSELoss):
+class BoundedMSE(_BoundedMixin, MSE):
     pass
 
 
 @LossFunctionRegistry.register("mve")
-class MVELoss(_LossFunctionBase):
+class MeanVarianceEstimation(_LossFunctionBase):
     """Calculate the loss using Eq. 9 from [nix1994]_
 
     References
@@ -91,9 +96,10 @@ class MVELoss(_LossFunctionBase):
         self,
         preds: Float[Tensor, "b t 2"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
-    ) -> Tensor:
+    ) -> Float[Tensor, ""]:
         mean, var = torch.unbind(preds, dim=-1)
 
         L_nll = (mean - targets) ** 2 / (2 * var)
@@ -104,7 +110,7 @@ class MVELoss(_LossFunctionBase):
 
 
 @LossFunctionRegistry.register("evidential")
-class EvidentialLoss(_LossFunctionBase):
+class Evidential(_LossFunctionBase):
     """Caculate the loss using Eq. **TODO** from [soleimany2021]_
 
     References
@@ -124,9 +130,10 @@ class EvidentialLoss(_LossFunctionBase):
         self,
         preds: Float[Tensor, "b t 4"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
-    ) -> Tensor:
+    ) -> Float[Tensor, ""]:
         mean, v, alpha, beta = torch.unbind(preds, dim=-1)
 
         residuals = targets - mean
@@ -149,28 +156,31 @@ class EvidentialLoss(_LossFunctionBase):
 
 
 @LossFunctionRegistry.register("bce")
-class BCELoss(_LossFunctionBase):
+class BinaryCrossEntropy(_LossFunctionBase):
     def forward(
         self,
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
-    ) -> Tensor:
+    ) -> Float[Tensor, ""]:
         L = F.binary_cross_entropy_with_logits(preds, targets, reduction="none")
 
         return self._reduce(L, mask, sample_weights)
 
 
-@LossFunctionRegistry.register("ce")
-class CrossEntropyLoss(_LossFunctionBase):
+
+@LossFunctionRegistry.register("xent")
+class CrossEntropy(_LossFunctionBase):
     def forward(
         self,
         preds: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
-    ) -> Tensor:
+    ) -> Float[Tensor, ""]:
         preds = preds.transpose(1, 2)
         targets = targets.long()
         L = F.cross_entropy(preds, targets, reduction="none")
@@ -267,9 +277,10 @@ class DirichletLoss(_LossFunctionBase):
         self,
         preds: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
-    ) -> Tensor:
+    ) -> Float[Tensor, ""]:
         targets = F.one_hot(targets, num_classes=2)
 
         S = preds.sum(-1, keepdim=True)
@@ -326,3 +337,7 @@ class WassersteinLoss(LossFunctionBase, _ThresholdMixin):
 
         return (Y.cumsum(1) - preds_norm.cumsum(1)).abs()
 """
+
+BCE = BinaryCrossEntropy
+XENT = CrossEntropy
+MVE = MeanVarianceEstimation

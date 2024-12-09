@@ -15,11 +15,12 @@ MetricRegistry = ClassRegistry()
 
 
 @MetricRegistry.register("mae")
-class MAEMetric(_LossFunctionBase):
+class MAE(_LossFunctionBase):
     def forward(
         self,
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -29,11 +30,12 @@ class MAEMetric(_LossFunctionBase):
 
 
 @MetricRegistry.register("rmse")
-class RMSEMetric(_LossFunctionBase):
+class RMSE(_LossFunctionBase):
     def forward(
         self,
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -43,21 +45,22 @@ class RMSEMetric(_LossFunctionBase):
 
 
 @MetricRegistry.register("bounded-mae")
-class BoundedMAEMetric(_BoundedMixin, MAEMetric):
+class BoundedMAE(_BoundedMixin, MAE):
     pass
 
 
 @MetricRegistry.register("bounded-rmse")
-class BoundedRMSEMetric(_BoundedMixin, RMSEMetric):
+class BoundedRMSE(_BoundedMixin, RMSE):
     pass
 
 
 @MetricRegistry.register("r2")
-class R2Metric(_LossFunctionBase):
+class R2(_LossFunctionBase):
     def forward(
         self,
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -80,11 +83,12 @@ class _ClassificationMetricBase(nn.Module):
 
 
 @MetricRegistry.register("roc")
-class AUROCMetric(_ClassificationMetricBase):
+class AUROC(_ClassificationMetricBase):
     def forward(
         self,
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -94,11 +98,12 @@ class AUROCMetric(_ClassificationMetricBase):
 
 
 @MetricRegistry.register("prc")
-class AUPRCMetric(_ClassificationMetricBase):
+class AUPRC(_ClassificationMetricBase):
     def forward(
         self,
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -108,7 +113,7 @@ class AUPRCMetric(_ClassificationMetricBase):
 
 
 @MetricRegistry.register("accuracy")
-class AccuracyMetric(_LossFunctionBase):
+class Accuracy(_LossFunctionBase):
     def __init__(
         self,
         task_weights: Float[ArrayLike, "t"],
@@ -124,6 +129,7 @@ class AccuracyMetric(_LossFunctionBase):
         self,
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
@@ -152,6 +158,7 @@ class F1(nn.Module):
         self,
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
+        *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
     ) -> Float[Tensor, ""]:
