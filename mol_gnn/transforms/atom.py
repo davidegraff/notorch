@@ -33,12 +33,12 @@ FORMAL_CHARGES = [-1, -2, 1, 2, 0]
 
 
 class AtomTransform(Protocol):
-    def __len__(self): ...
+    def __len__(self) -> int: ...
 
     def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "n t"]: ...
 
 
-class ElementOnlyAtomTransform(Sized):
+class ElementOnlyAtomTransform:
     def __init__(self, elements: Sequence[str] = ELEMENTS):
         self.element_map = IndexMapWithUnknown(elements)
 
@@ -55,7 +55,7 @@ class ElementOnlyAtomTransform(Sized):
         return torch.tensor(types)
 
 
-class MultiTypeAtomTransform(Sized):
+class MultiTypeAtomTransform:
     def __init__(
         self,
         elements: Sequence[str] | None = ELEMENTS,

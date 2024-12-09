@@ -9,7 +9,7 @@ SANITIZE_OPS = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJ
 
 
 @dataclass
-class SmiToMol(Transform[str, Mol]):
+class SmiToMol(Transform[str, Mol, list[Mol]]):
     keep_h: bool = True
     add_h: bool = False
 
@@ -21,3 +21,6 @@ class SmiToMol(Transform[str, Mol]):
             mol = Chem.MolFromSmiles(smi)
 
         return Chem.AddHs(mol) if self.add_h else mol
+
+    def collate(self, inputs: list[Mol]) -> list[Mol]:
+        return inputs

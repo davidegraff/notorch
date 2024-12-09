@@ -11,7 +11,7 @@ from mol_gnn.types import Mol
 
 
 @dataclass
-class FingerprintFeaturizer(Sized, Transform[Mol, Float[Tensor, "d"]]):
+class FingerprintFeaturizer(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
@@ -23,17 +23,13 @@ class FingerprintFeaturizer(Sized, Transform[Mol, Float[Tensor, "d"]]):
     def __len__(self) -> int:
         return self.fpgen.GetOptions().fpSize
 
-    # @singledispatchmethod
     def __call__(self, input) -> Float[Tensor, "d"]:
         fp = self.func(input)
 
         return torch.from_numpy(fp).float()
 
-    # @__call__.register
-    # def _(self, input: Iterable[Mol]):
-    #     fps = [self.func(mol) for mol in input]
-
-    #     return torch.from_numpy(np.stack(fps)).float()
+    def collate(self, inputs: list[Tensor]) -> Tensor:
+        return torch.stack(inputs)
 
     @classmethod
     def morgan(
