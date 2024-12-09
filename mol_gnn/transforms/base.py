@@ -1,24 +1,21 @@
-from abc import abstractmethod
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import overload
+from typing import Protocol
 
 
-class Transform[S, T]:
-    @overload
-    def __call__(self, input: S) -> T: ...
 
-    @overload
-    def __call__(self, input: Iterable[S]) -> Sequence[T]: ...
+class Transform[S, T, T_batched](Protocol):
+    def __call__(self, input: T) -> S: ...
 
-    @abstractmethod
-    def __call__(self, input: S | Iterable[S]) -> T | Sequence[T]:
-        pass
+    def collate(self, inputs: list[T]) -> T_batched: ...
 
 
 @dataclass
-class Pipeline[S, T](Transform):
+class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
     transforms: Sequence[Transform]
+
+    def collate(self, inputs: list[T]) -> T_batched:
+        return self.transforms[-1].collate(inputs)
 
     def __call__(self, input: S) -> T:
         output = input
@@ -27,8 +24,17 @@ class Pipeline[S, T](Transform):
 
         return output
 
-    # @abstractmethod
-    # def __call__(self, input):
-    #     return super().__call__(input)
-    # def __call__(self, input):
-    #     return super().__call__(input)
+
+@dataclass
+class ManagedTransform[S, T, T_batched](Transform[S, T, T_batched]):
+    transform: Transform[S, T, T_batched]
+    in_key: str
+    out_key: str
+
+    def collate(self, inputs: list[T]) -> T_batched:
+        return self.transform.collate(inputs)
+
+    def __call__(self, sample: dict) -> dict:
+        sample[self.out_key] = self.transform(sample[self.in_key])
+
+        return sample

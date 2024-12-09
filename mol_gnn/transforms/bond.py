@@ -25,12 +25,12 @@ BOND_STEREOS = [
 
 
 class BondTransform(Protocol):
-    def __len__(self): ...
+    def __len__(self) -> int: ...
 
     def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "n t"]: ...
 
 
-class BondTypeOnlyTransform(Sized):
+class BondTypeOnlyTransform:
     def __init__(self, bond_types: Iterable[BondType] = BOND_TYPES):
         self.bond_type_map = IndexMapWithUnknown(bond_types)
 
@@ -43,7 +43,7 @@ class BondTypeOnlyTransform(Sized):
         return torch.tensor(types)
 
 
-class MultiTypeBondTransform(Sized):
+class MultiTypeBondTransform:
     def __init__(
         self,
         bond_types: Iterable[BondType] | None = BOND_TYPES,
