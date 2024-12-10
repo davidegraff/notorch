@@ -6,6 +6,7 @@ from omegaconf import DictConfig
 from rich import print
 
 import mol_gnn.cli.utils.instantiate as instantiate
+from mol_gnn.data.dataset import Dataset
 from mol_gnn.schedulers import meta_lr_sched_factory
 
 log = logging.getLogger(__name__)
@@ -13,6 +14,8 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="configs", config_name="train", version_base=None)
 def train(cfg: DictConfig):
+    dataset: Dataset = hydra.utils.instantiate(cfg.data, _convert_="object")
+
     module_configs = {
         name: instantiate.module_config(module_config)
         for name, module_config in cfg.model.modules.items()

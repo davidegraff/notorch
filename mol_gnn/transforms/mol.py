@@ -11,7 +11,7 @@ from mol_gnn.types import Mol
 
 
 @dataclass
-class FingerprintFeaturizer(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
+class MolToFP(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 

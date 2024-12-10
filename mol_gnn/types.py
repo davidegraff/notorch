@@ -9,6 +9,12 @@ type Rxn = tuple[Mol, Mol]
 type TensorDictKey = tuple[str, ...] | str
 
 
+class TransformConfig(TypedDict):
+    transform: Callable
+    in_key: str
+    out_key: str
+
+
 class ModuleConfig(NamedTuple):
     module: Callable
     in_keys: list[TensorDictKey] | dict[TensorDictKey, str]

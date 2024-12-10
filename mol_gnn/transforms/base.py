@@ -2,9 +2,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
+from numpy.typing import ArrayLike
+from jaxtyping import Num
+from torch import Tensor
+import torch
+
 
 class Transform[S, T, T_batched](Protocol):
-    def __call__(self, input: T) -> S: ...
+    def __call__(self, input: S) -> T: ...
 
     def collate(self, inputs: list[T]) -> T_batched: ...
 
@@ -25,15 +30,33 @@ class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
 
 
 @dataclass
-class ManagedTransform[S, T, T_batched](Transform[S, T, T_batched]):
+class ManagedTransform[S, T, T_batched](Transform):
     transform: Transform[S, T, T_batched]
     in_key: str
     out_key: str
 
-    def collate(self, inputs: list[T]) -> T_batched:
+    def collate(self, samples: dict) -> dict:
+        inputs = [sample[self.out_key] for sample in samples]
+
         return self.transform.collate(inputs)
+        # return {self.out_key: self.transform.collate(inputs)}
 
     def __call__(self, sample: dict) -> dict:
         sample[self.out_key] = self.transform(sample[self.in_key])
 
         return sample
+
+
+@dataclass
+class JoinColumns:
+    columns: list[str]
+    out_key: str
+
+    def collate(self, samples: dict) -> Num[Tensor, "n t"]:
+        inputs = [sample[self.out_key] for sample in samples]
+
+        return {self.out_key: torch.stack(inputs)}
+
+    def __call__(self, sample: dict) -> Num[ArrayLike, "t"]:
+        sample[self.out_key] = [sample[column] for column in self.columns]
+

@@ -104,8 +104,8 @@ class SimpleModel(L.LightningModule):
         self.optim_factory = optim_factory
         self.lr_sched_factory = lr_sched_factory
 
-    def forward(self, td: TensorDict) -> Tensor:
-        return self.model(td)
+    def forward(self, batch: TensorDict) -> Tensor:
+        return self.model(batch)
 
     def training_step(self, batch: TensorDict, batch_idx: int = 0):
         batch = self(batch)

@@ -21,7 +21,7 @@ def instantiate_module_config(module_config: DictConfig) -> ModuleConfig:
     )
 
 
-def instantiate_loss_config(loss_config) -> LossConfig:
+def instantiate_loss_config(loss_config: DictConfig) -> LossConfig:
     return LossConfig(
         loss_config["weight"] if loss_config["weight"] is not None else 1.0,
         hydra.utils.instantiate(loss_config["module"]),
