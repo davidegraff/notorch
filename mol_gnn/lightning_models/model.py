@@ -11,7 +11,12 @@ from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
 
+from mol_gnn.conf import TARGET_KEY_PREFIX
 from mol_gnn.types import LossConfig, LRSchedConfig, ModuleConfig
+
+
+def is_target_key(key: str):
+    return key.split(".")[0] == TARGET_KEY_PREFIX
 
 
 class SimpleModel(L.LightningModule):
@@ -23,7 +28,7 @@ class SimpleModel(L.LightningModule):
     Parameters
     ----------
     model_config : dict[str, ModelModuleConfig]
-        A mapping from a name to a 3-tuple containing:
+        A mapping from a name to a dictionary with the keys:
 
         * ``module``: the :class:`~torch.nn.Module` that will be wrapped inside a
         :class:`~tensordict.nn.TensorDictModule`.
@@ -40,27 +45,27 @@ class SimpleModel(L.LightningModule):
             the key corresponding to the 3-tuple)
 
     loss_config : dict[str, LossModuleConfig]
-        A mapping from a name to a 3-tuple containing:
+        A mapping from a name to a dictionary with the keys:
 
         - ``weight``: a float for the term's weight in the total loss
         - ``module``: a callable that returns a single tensor
         - ``in_keys``: the input keys of the module
 
         .. note::
-            Each term will be placed into the tensordict under the nested key `("loss", KEY)`
+            Each term will be placed into the tensordict under the key `("loss.<NAME>")`
 
         The overall training loss is computed as the weighted sum of all terms. For more
         details on the ``in_keys`` key, see :attr:`model_config`.
 
     metric_config : dict[str, LossModuleConfig]
-        A mapping from a name to a 3-tuple containing:
+        A mapping from a name to a dictionary with the keys:
 
         - ``weight``: a float for the term's weight in the total validation loss
         - ``module``: a callable that returns a single tensor
         - ``in_keys``: the input keys of the module
 
         .. note::
-            Each term will be placed into the tensordict under the nested key `("metric", KEY)`
+            Each term will be placed into the tensordict under the key `("metric.<NAME>")`
 
         The overall validation loss is computed as the weighted sum of all loss term values. For
         details on the ``in_keys`` key, see :attr:`model_config`.
@@ -68,9 +73,9 @@ class SimpleModel(L.LightningModule):
 
     def __init__(
         self,
-        module_configs: dict[str, ModuleConfig],
-        loss_configs: dict[str, LossConfig],
-        metric_configs: dict[str, LossConfig],
+        modules: dict[str, ModuleConfig],
+        losses: dict[str, LossConfig],
+        metrics: dict[str, LossConfig],
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
         keep_all_output: bool = False,
@@ -78,23 +83,34 @@ class SimpleModel(L.LightningModule):
         super().__init__()
 
         modules = [
-            TensorDictModule(module, in_keys, [(name, key) for key in out_keys])
-            for name, (module, in_keys, out_keys) in module_configs.items()
+            TensorDictModule(
+                module_config["module"],
+                module_config["in_keys"],
+                [f"{name}.{key}" for key in module_config["out_keys"]],
+            )
+            for name, module_config in modules.items()
         ]
 
         selected_out_keys = set()
         loss_modules = []
-        for name, (weight, module, in_keys) in loss_configs.items():
-            wrapped_module = TensorDictModule(module, in_keys, [("loss", name)])
-            wrapped_module._weight = weight
+        for name, loss_config in losses.items():
+            wrapped_module = TensorDictModule(
+                loss_config["module"], loss_config["in_keys"], [("loss", name)]
+            )
+            wrapped_module = TensorDictModule(
+                loss_config["module"], loss_config["in_keys"], [f"loss.{name}"]
+            )
+            wrapped_module._weight = loss_config["weight"]
             loss_modules.append(wrapped_module)
-            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
+            selected_out_keys.update([k for k in loss_config["in_keys"] if not is_target_key(k)])
         metric_modules = []
-        for name, (weight, module, in_keys) in metric_configs.items():
-            wrapped_module = TensorDictModule(module, in_keys, [("metric", name)])
-            wrapped_module._weight = weight
+        for name, metric_config in metrics.items():
+            wrapped_module = TensorDictModule(
+                metric_config["module"], metric_config["in_keys"], [f"metric.{name}"]
+            )
+            wrapped_module._weight = metric_config["weight"]
             metric_modules.append(wrapped_module)
-            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
+            selected_out_keys.update([k for k in metric_config["in_keys"] if not is_target_key(k)])
 
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
