@@ -1,5 +1,5 @@
 # ruff: noqa: F401
-from typing import Callable, Literal, NamedTuple, Required, TypedDict
+from typing import Callable, Literal, Required, TypedDict
 
 from rdkit.Chem import Atom, Bond, Mol
 from torch import Tensor
@@ -9,16 +9,16 @@ type Rxn = tuple[Mol, Mol]
 type TensorDictKey = tuple[str, ...] | str
 
 
-class ModuleConfig(NamedTuple):
+class ModuleConfig(TypedDict):
     module: Callable
     in_keys: list[TensorDictKey] | dict[TensorDictKey, str]
     out_keys: list[TensorDictKey]
 
 
-class LossConfig(NamedTuple):
-    weight: float
+class LossConfig(TypedDict):
     module: Callable[..., Tensor]
     in_keys: list[TensorDictKey] | dict[TensorDictKey, str]
+    weight: float
 
 
 class LRSchedConfig(TypedDict, total=False):
