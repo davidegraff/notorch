@@ -16,9 +16,9 @@ class ModuleConfig(TypedDict):
 
 
 class LossConfig(TypedDict):
-    weight: float
     module: Callable[..., Tensor]
     in_keys: list[TensorDictKey] | dict[TensorDictKey, str]
+    weight: float
 
 
 class LRSchedConfig(TypedDict, total=False):
