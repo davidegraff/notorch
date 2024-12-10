@@ -6,7 +6,6 @@ from omegaconf import DictConfig
 from rich import print
 # import torch.nn as nn
 
-# import mol_gnn.cli.utils.instantiate as instantiate
 from mol_gnn.data.dataset import Dataset
 from mol_gnn.lightning_models.model import SimpleModel
 
