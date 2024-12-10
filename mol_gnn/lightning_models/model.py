@@ -68,9 +68,9 @@ class SimpleModel(L.LightningModule):
 
     def __init__(
         self,
-        module_configs: dict[str, ModuleConfig],
-        loss_configs: dict[str, LossConfig],
-        metric_configs: dict[str, LossConfig],
+        modules: dict[str, ModuleConfig],
+        losses: dict[str, LossConfig],
+        metrics: dict[str, LossConfig],
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
         keep_all_output: bool = False,
@@ -78,23 +78,31 @@ class SimpleModel(L.LightningModule):
         super().__init__()
 
         modules = [
-            TensorDictModule(module, in_keys, [(name, key) for key in out_keys])
-            for name, (module, in_keys, out_keys) in module_configs.items()
+            TensorDictModule(
+                module_config["module"],
+                module_config["in_keys"],
+                [(name, key) for key in module_config["out_keys"]],
+            )
+            for name, module_config in modules.items()
         ]
 
         selected_out_keys = set()
         loss_modules = []
-        for name, (weight, module, in_keys) in loss_configs.items():
-            wrapped_module = TensorDictModule(module, in_keys, [("loss", name)])
-            wrapped_module._weight = weight
+        for name, loss_config in losses.items():
+            wrapped_module = TensorDictModule(
+                loss_config["module"], loss_config["in_keys"], [("loss", name)]
+            )
+            wrapped_module._weight = loss_config["weight"]
             loss_modules.append(wrapped_module)
-            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
+            selected_out_keys.update([key for key in loss_config["in_keys"] if key[0] != "input"])
         metric_modules = []
-        for name, (weight, module, in_keys) in metric_configs.items():
-            wrapped_module = TensorDictModule(module, in_keys, [("metric", name)])
-            wrapped_module._weight = weight
+        for name, metric_config in metrics.items():
+            wrapped_module = TensorDictModule(
+                metric_config["module"], metric_config["in_keys"], [("metric", name)]
+            )
+            wrapped_module._weight = metric_config["weight"]
             metric_modules.append(wrapped_module)
-            selected_out_keys.update([key for key in in_keys if key[0] != "input"])
+            selected_out_keys.update([key for key in metric_config["in_keys"] if key[0] != "input"])
 
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
