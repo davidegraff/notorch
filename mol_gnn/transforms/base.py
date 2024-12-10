@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -11,14 +11,14 @@ import torch
 class Transform[S, T, T_batched](Protocol):
     def __call__(self, input: S) -> T: ...
 
-    def collate(self, inputs: list[T]) -> T_batched: ...
+    def collate(self, inputs: Collection[T]) -> T_batched: ...
 
 
 @dataclass
 class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
     transforms: Sequence[Transform]
 
-    def collate(self, inputs: list[T]) -> T_batched:
+    def collate(self, inputs: Collection[T]) -> T_batched:
         return self.transforms[-1].collate(inputs)
 
     def __call__(self, input: S) -> T:
@@ -27,24 +27,6 @@ class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
             output = transform(output)
 
         return output
-
-
-@dataclass
-class ManagedTransform[S, T, T_batched](Transform):
-    transform: Transform[S, T, T_batched]
-    in_key: str
-    out_key: str
-
-    def collate(self, samples: dict) -> dict:
-        inputs = [sample[self.out_key] for sample in samples]
-
-        return self.transform.collate(inputs)
-        # return {self.out_key: self.transform.collate(inputs)}
-
-    def __call__(self, sample: dict) -> dict:
-        sample[self.out_key] = self.transform(sample[self.in_key])
-
-        return sample
 
 
 @dataclass
