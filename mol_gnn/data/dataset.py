@@ -2,9 +2,7 @@ from collections.abc import Collection, Mapping
 from copy import copy
 from dataclasses import dataclass, field
 import textwrap
-from typing import Protocol
 
-# from jaxtyping import Array, Float
 import pandas as pd
 from rich.pretty import pretty_repr
 import torch
@@ -12,17 +10,9 @@ from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
+from mol_gnn.data.database.base import Database
 from mol_gnn.transforms.managed import ManagedTransform
 from mol_gnn.types import TransformConfig
-# from mol_gnn.transforms.base import JoinColumns
-
-
-class Database[KT: (int, str), VT](Protocol):
-    in_key: str | None
-    out_key: str
-
-    def __getitem__(self, key: KT) -> VT: ...
-    def __len__(self) -> int: ...
 
 
 @dataclass
@@ -57,6 +47,7 @@ class NotorchDataset(Dataset[dict]):
         for name, db in self.databases.items():
             db_key = sample[db.in_key]
             sample[db.out_key] = db[db_key]
+
         return sample
         # dicts = [transform(record) for transform in self.transforms.values()]
         # out = reduce(lambda a, b: a | b, dicts, record)
