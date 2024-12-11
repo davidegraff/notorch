@@ -82,7 +82,7 @@ class SimpleModel(L.LightningModule):
     ):
         super().__init__()
 
-        modules = [
+        model_modules = [
             TensorDictModule(
                 module_config["module"],
                 module_config["in_keys"],
@@ -114,7 +114,7 @@ class SimpleModel(L.LightningModule):
 
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
-        self.model = TensorDictSequential(*modules, selected_out_keys=selected_out_keys)
+        self.model = TensorDictSequential(*model_modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
         self.optim_factory = optim_factory
@@ -162,6 +162,9 @@ class SimpleModel(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = self.optim_factory(self.parameters())
+        if self.lr_sched_factory is None:
+            return optimizer
+
         lr_scheduler = self.lr_sched_factory(optimizer)
 
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}

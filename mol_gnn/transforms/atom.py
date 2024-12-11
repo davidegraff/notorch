@@ -9,7 +9,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
+from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
 from mol_gnn.types import Atom
 
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
@@ -40,7 +40,7 @@ class AtomTransform(Protocol):
 
 class ElementOnlyAtomTransform:
     def __init__(self, elements: Sequence[str] = ELEMENTS):
-        self.element_map = IndexMapWithUnknown(elements)
+        self.element_map = InverseIndexWithUnknown(elements)
 
     def __len__(self) -> int:
         return len(self.element_map)
@@ -90,11 +90,12 @@ class MultiTypeAtomTransform:
             if index_map is not None
         ]
 
+        self.__num_types = sum(sizes)
         self.sizes = torch.tensor(sizes)
         self.offset = F.pad(self.sizes.cumsum(dim=0), [1, 0])[:-1]
 
     def __len__(self) -> int:
-        return self.sizes.sum()
+        return self.__num_types
 
     @property
     def num_types(self) -> int:

@@ -26,11 +26,11 @@ def MLP(
     :math:`\tau` is a nonlinearity (e.g., ReLU), and :math:`L` is the number of layers.
     """
 
-    dropout = nn.Dropout(dropout)
+    drop = nn.Dropout(dropout)
     act = activation()
 
     dims = [input_dim] + [hidden_dim] * num_layers + [output_dim]
-    blocks = [[dropout, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
+    blocks = [[drop, nn.Linear(d1, d2), act] for d1, d2 in zip(dims[:-1], dims[1:])]
     layers = sum(blocks, [])
 
     return nn.Sequential(*layers[1:-1])

@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -36,5 +37,5 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
 
         return Graph(V, E, edge_index, rev_index)
 
-    def collate(self, inputs: list[Graph]) -> BatchedGraph:
+    def collate(self, inputs: Collection[Graph]) -> BatchedGraph:
         return BatchedGraph.from_graphs(inputs)

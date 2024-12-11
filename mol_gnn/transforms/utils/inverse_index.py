@@ -1,20 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Hashable, Mapping, Sequence
+from collections.abc import Hashable, Iterable, Mapping, Collection
 from typing import Literal, TypeVar, overload
 
 KT = TypeVar("KT", bound=Hashable)
-T = TypeVar("T")
 
 
-class IndexMap[KT](Mapping[KT, int]):
-    """A :class:`IndexMap` is the logical inverse of a :class:`list`. That is, a
-    list is a mapping from integer index to the respective item. In contrast,
-    an ``IndexMap`` is a mapping from an item to its index in the corresponding
-    list.
+class InverseIndex[KT](Mapping[KT, int]):
+    """
+    A :class:`InverseIndex` is the logical inverse of a :class:`list`. That is, a list is a mapping
+    from integer index to the respective item. In contrast, an ``IndexMap`` is a mapping from an
+    item to its index in the corresponding list.
     """
 
-    def __init__(self, keys: Sequence[KT]):
+    def __init__(self, keys: Iterable[KT]):
         self.__k2i = dict((x, i) for i, x in enumerate(keys))
 
     def __getitem__(self, key: KT) -> int:
@@ -24,9 +23,9 @@ class IndexMap[KT](Mapping[KT, int]):
     def get(self, key: KT, default: None) -> int | None: ...
 
     @overload
-    def get(self, key: KT, default: T) -> int | T: ...
+    def get[T](self, key: KT, default: T) -> int | T: ...
 
-    def get(self, key: KT, default: T | None = None) -> int | T | None:
+    def get[T](self, key: KT, /, default: T | None = None) -> int | T:
         return self.__k2i.get(key, default)
 
     def __len__(self) -> int:
@@ -39,10 +38,11 @@ class IndexMap[KT](Mapping[KT, int]):
         return repr(self.__k2i)
 
 
-class IndexMapWithUnknown(IndexMap[KT]):
-    """A :class:`IndexMapWithUnknown` is like a :class:`IndexMap`, with the only
-    difference being that querying the map for an unknown item will always
-    return padding index, i.e., the number of items in the map.
+class InverseIndexWithUnknown[KT](InverseIndex[KT]):
+    """
+    A :class:`InverseIndexWithUnknown` is like a :class:`InverseIndex`, with the only difference
+    being that querying the map for an unknown item will always return padding index, i.e., the
+    number of items in the map.
     """
 
     def __getitem__(self, key: KT):
@@ -64,23 +64,23 @@ def build(choices: None, unknown_pad: bool) -> None: ...
 
 
 @overload
-def build(choices: Sequence[KT], unknown_pad: Literal[True]) -> IndexMapWithUnknown: ...
+def build(choices: Collection[KT], unknown_pad: Literal[True]) -> InverseIndexWithUnknown[KT]: ...
 
 
 @overload
-def build(choices: Sequence[KT], unknown_pad: Literal[False]) -> IndexMap: ...
+def build(choices: Collection[KT], unknown_pad: Literal[False]) -> InverseIndex[KT]: ...
 
 
-def build(choices: Sequence[KT] | None, unknown_pad: bool = True):
+def build(choices: Collection[KT] | None, unknown_pad: bool = True):
     if choices is not None and len(choices) == 0 and not unknown_pad:
         raise ValueError(
             "arg 'choices' was empty but arg 'unknown_pad' is False! "
-            "The resuting `IndexMap` will have no valid keys!"
+            "The resuting `InverseIndex` will have no valid keys!"
         )
 
     if choices is None:
         return None
     elif unknown_pad:
-        return IndexMapWithUnknown(choices)
+        return InverseIndexWithUnknown(choices)
 
-    return IndexMap(choices)
+    return InverseIndex(choices)

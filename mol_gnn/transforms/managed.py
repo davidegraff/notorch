@@ -1,10 +1,11 @@
+from collections.abc import Collection
 from dataclasses import dataclass
 
 from mol_gnn.transforms.base import Transform
 
 
 @dataclass
-class ManagedTransform[S, T, T_batched](Transform):
+class ManagedTransform[S, T, T_batched]:
     """A :class:`ManagedTransform` wraps around an input :class:`Transform` that reads and writes
     from to an input dictionary.
 
@@ -15,7 +16,7 @@ class ManagedTransform[S, T, T_batched](Transform):
     in_key: str
     out_key: str
 
-    def collate(self, samples: dict) -> dict:
+    def collate(self, samples: Collection[dict]) -> T_batched:
         inputs = [sample[self.out_key] for sample in samples]
 
         return self.transform.collate(inputs)

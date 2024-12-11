@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from typing import Protocol
 
 from jaxtyping import Int
@@ -9,7 +9,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
+from mol_gnn.transforms.utils.inverse_index import IndexMapWithUnknown, build
 from mol_gnn.types import Bond
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
@@ -31,7 +31,7 @@ class BondTransform(Protocol):
 
 
 class BondTypeOnlyTransform:
-    def __init__(self, bond_types: Iterable[BondType] = BOND_TYPES):
+    def __init__(self, bond_types: Collection[BondType] = BOND_TYPES):
         self.bond_type_map = IndexMapWithUnknown(bond_types)
 
     def __len__(self) -> int:
@@ -46,8 +46,8 @@ class BondTypeOnlyTransform:
 class MultiTypeBondTransform:
     def __init__(
         self,
-        bond_types: Iterable[BondType] | None = BOND_TYPES,
-        stereos: Iterable[BondStereo] | None = BOND_STEREOS,
+        bond_types: Collection[BondType] | None = BOND_TYPES,
+        stereos: Collection[BondStereo] | None = BOND_STEREOS,
     ):
         self.bond_type_map = build(bond_types, unknown_pad=True)
         self.stereo_map = build(stereos, unknown_pad=True)
@@ -58,19 +58,20 @@ class MultiTypeBondTransform:
             if index_map is not None
         ]
 
-        self.sizes = torch.tensor(sizes)
+        self.__num_types = sum(sizes)
+        self.sizes = torch.tensor(sizes, dtype=torch.long)
         self.offset = F.pad(self.sizes.cumsum(dim=0), [1, 0])[:-1]
 
     def __len__(self) -> int:
-        return self.sizes.sum()
+        return self.__num_types
 
     def _transform_single(self, bond: Bond) -> list[int]:
         types = []
 
         if self.bond_type_map is not None:
-            types.append(self.element_map[bond.GetBondType()])
+            types.append(self.bond_type_map[bond.GetBondType()])
         if self.stereo_map is not None:
-            types.append(self.hybrid_map[bond.GetStereo()])
+            types.append(self.stereo_map[bond.GetStereo()])
 
         return types
 

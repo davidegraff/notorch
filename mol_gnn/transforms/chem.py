@@ -1,3 +1,4 @@
+from collections.abc import Collection
 from dataclasses import dataclass
 
 from rdkit import Chem
@@ -22,5 +23,5 @@ class SmiToMol(Transform[str, Mol, list[Mol]]):
 
         return Chem.AddHs(mol) if self.add_h else mol
 
-    def collate(self, inputs: list[Mol]) -> list[Mol]:
-        return inputs
+    def collate(self, inputs: Collection[Mol]) -> list[Mol]:
+        return list(inputs)
