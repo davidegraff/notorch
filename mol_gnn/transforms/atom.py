@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+import textwrap
 from typing import Protocol
 
 from jaxtyping import Int
@@ -9,6 +10,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
+from mol_gnn.conf import REPR_INDENT
 from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
 from mol_gnn.types import Atom
 
@@ -125,3 +127,24 @@ class MultiTypeAtomTransform:
         types = [self._transform_single(atom) for atom in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
+
+    def __repr__(self) -> str:
+        lines = []
+
+        if self.element_map is not None:
+            lines.append(f"(elements): {self.element_map}")
+        if self.hybrid_map is not None:
+            lines.append(f"(hybridizations): {self.hybrid_map}")
+        if self.chirality_map is not None:
+            lines.append(f"(chiralities): {self.chirality_map}")
+        if self.degree_map is not None:
+            lines.append(f"(degrees): {self.degree_map}")
+        if self.fc_map is not None:
+            lines.append(f"(formal_charges): {self.fc_map}")
+        if self.num_hs_map is not None:
+            lines.append(f"(num_hs): {self.num_hs_map}")
+        if self.aromaticity_map is not None:
+            lines.append(f"(aromaticity): {self.aromaticity_map}")
+        text = "\n".join(lines)
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Collection, Iterable
+import textwrap
 from typing import Protocol
 
 from jaxtyping import Int
@@ -9,6 +10,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
+from mol_gnn.conf import REPR_INDENT
 from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
 from mol_gnn.types import Bond
 
@@ -41,6 +43,11 @@ class BondTypeOnlyTransform:
         types = [[self.bond_type_map[bond.GetBondType()]] for bond in input]
 
         return torch.tensor(types)
+
+    def __repr__(self):
+        text = f"(bond_types): {self.bond_type_map}"
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
 
 
 class MultiTypeBondTransform:
@@ -79,3 +86,17 @@ class MultiTypeBondTransform:
         types = [self._transform_single(bond) for bond in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
+
+    def __repr__(self) -> str:
+        lines = []
+
+        if self.bond_type_map is not None:
+            lines.append(f"(bond_types): {self.stereo_map}")
+        if self.stereo_map is not None:
+            lines.append(f"(stereos): {self.stereo_map}")
+        text = "\n".join(lines)
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
+
+    def stringify_choices(self):
+        return list(map(str, ))
