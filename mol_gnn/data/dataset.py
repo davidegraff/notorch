@@ -1,10 +1,9 @@
 from collections.abc import Collection, Mapping
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Any, Protocol, Sequence
+from typing import Protocol
 
 # from jaxtyping import Array, Float
-import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader

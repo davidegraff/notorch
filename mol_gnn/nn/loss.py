@@ -8,7 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-
 class _LossFunctionBase(nn.Module):
     task_weights: Float[Tensor, "1 #t"]
 
