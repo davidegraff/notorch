@@ -9,7 +9,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.utils.inverse_index import IndexMapWithUnknown, build
+from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
 from mol_gnn.types import Bond
 
 BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
@@ -32,7 +32,7 @@ class BondTransform(Protocol):
 
 class BondTypeOnlyTransform:
     def __init__(self, bond_types: Collection[BondType] = BOND_TYPES):
-        self.bond_type_map = IndexMapWithUnknown(bond_types)
+        self.bond_type_map = InverseIndexWithUnknown(bond_types)
 
     def __len__(self) -> int:
         return len(self.bond_type_map)
