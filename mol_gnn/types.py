@@ -6,7 +6,6 @@ from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 
 type Rxn = tuple[Mol, Mol]
-type TensorDictKey = tuple[str, ...] | str
 
 
 class TransformConfig(TypedDict):
@@ -17,13 +16,13 @@ class TransformConfig(TypedDict):
 
 class ModuleConfig(TypedDict):
     module: Callable
-    in_keys: list[TensorDictKey] | dict[TensorDictKey, str]
-    out_keys: list[TensorDictKey]
+    in_keys: list[str] | dict[str, str]
+    out_keys: list[str]
 
 
 class LossConfig(TypedDict):
     module: Callable[..., Tensor]
-    in_keys: list[TensorDictKey] | dict[TensorDictKey, str]
+    in_keys: list[str] | dict[str, str]
     weight: float
 
 
