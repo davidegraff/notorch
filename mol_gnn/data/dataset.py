@@ -1,6 +1,7 @@
 from collections.abc import Collection, Mapping
 from copy import copy
 from dataclasses import dataclass, field
+import textwrap
 from typing import Protocol
 
 # from jaxtyping import Array, Float
@@ -15,6 +16,9 @@ from mol_gnn.transforms.managed import ManagedTransform
 
 
 class Database[KT: (int, str), VT](Protocol):
+    in_key: str | None
+    out_key: str
+
     def __getitem__(self, key: KT) -> VT: ...
     def __len__(self) -> int: ...
 
@@ -44,7 +48,9 @@ class NotorchDataset(Dataset[dict]):
             sample = transform(sample)
         for name, group in self.targets.items():
             sample[name] = group[idx]
-
+        for name, db in self.databases.items():
+            db_key = sample[db.in_key]
+            sample[db.out_key] = db[db_key]
         return sample
         # dicts = [transform(record) for transform in self.transforms.values()]
         # out = reduce(lambda a, b: a | b, dicts, record)
@@ -66,3 +72,41 @@ class NotorchDataset(Dataset[dict]):
 
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
+
+    # def __repr__(self) -> str:
+    #     INDENT = 2 * " "
+    #     transform_items = "\n".join(f"({name}): {value}" for name, value in self.transforms.items())
+    #     transform_repr = [
+    #         "transforms: {",
+    #         textwrap.indent(transform_items, INDENT),
+    #         "}"
+    #     ]
+
+    #     return ""
+
+"""
+NotorchDataset(
+  (transforms):
+    'smi_to_mol': SmiToMol(keep_h=True, add_hs=False)
+    'smi_to_graph': Pipeline(
+      (0): SmiToMol(...)
+      (1): MolToGraph(
+        (atom_transform): MultiTypeAtomTransform(
+          (elements): [...]
+          (num_hs): [...]
+        )
+        (bond_transform): MultiTypeBondTransform(
+          (bond_types): [...]
+          (stereos): [...]
+        )
+      )
+    )
+  )
+  (databases):
+    (qm_descs): 
+  (target_groups): {
+    'regression': ['a', 'b', 'c']
+    'classification': ['d', 'e']
+  }
+)
+"""
