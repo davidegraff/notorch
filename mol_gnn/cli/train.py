@@ -7,7 +7,7 @@ from omegaconf import DictConfig
 from rich import print
 # import torch.nn as nn
 
-from mol_gnn.data.dataset import Dataset
+from mol_gnn.data.dataset import Dataset, NotorchDataset
 from mol_gnn.lightning_models.model import SimpleModel
 
 log = logging.getLogger(__name__)
@@ -36,10 +36,13 @@ def train(cfg: DictConfig):
     # print(hydra.utils.instantiate(cfg.model.modules))
     # print(hydra.utils.instantiate(cfg.model.losses))
     # print(hydra.utils.instantiate(cfg.model.metrics))
-    dataset: Dataset = hydra.utils.instantiate(cfg.data, _convert_="object")
+    transforms = (hydra.utils.instantiate(cfg.data.transforms, _convert_="object"))
+    target_groups = (hydra.utils.instantiate(cfg.data.target_groups, _convert_="object"))
+    print(NotorchDataset(None, transforms, {"foo": "bar"}, target_groups))
+    # dataset: Dataset = hydra.utils.instantiate(cfg.data, _convert_="object")
 
-    model: SimpleModel = hydra.utils.instantiate(cfg.model, _convert_="object")
-    print(model)
+    # model: SimpleModel = hydra.utils.instantiate(cfg.model, _convert_="object")
+    # print(model)
     # model = hydra.utils.get_class(cfg.model._target_)(
     #     module_configs, loss_configs, metric_configs, optim_factory, lr_sched_factory
     # )

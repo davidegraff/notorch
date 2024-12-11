@@ -1,6 +1,9 @@
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass
+import textwrap
 from typing import Protocol
+
+from mol_gnn.conf import REPR_INDENT
 
 
 class Transform[S, T, T_batched](Protocol):
@@ -28,16 +31,8 @@ class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
 
         return output  # type: ignore
 
+    def __repr__(self) -> str:
+        text = "\n".join(f"({i}): {transform}" for i, transform in enumerate(self.transforms))
 
-# @dataclass
-# class JoinColumns:
-#     columns: list[str]
-#     out_key: str
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
 
-#     def collate(self, samples: dict) -> Num[Tensor, "n t"]:
-#         inputs = [sample[self.out_key] for sample in samples]
-
-#         return {self.out_key: torch.stack(inputs)}
-
-#     def __call__(self, sample: dict) -> Num[ArrayLike, "t"]:
-#         sample[self.out_key] = [sample[column] for column in self.columns]

@@ -1,6 +1,8 @@
 from collections.abc import Collection
 from dataclasses import dataclass
+import textwrap
 
+from mol_gnn.conf import REPR_INDENT
 from mol_gnn.transforms.base import Transform
 
 
@@ -26,3 +28,12 @@ class ManagedTransform[S, T, T_batched]:
         sample[self.out_key] = self.transform(sample[self.in_key])
 
         return sample
+
+    def __repr__(self) -> str:
+        text = "\n".join([
+            f"(transform): {self.transform}",
+            f"(in_key): {repr(self.in_key)}",
+            f"(out_key): {repr(self.out_key)}"
+        ])
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

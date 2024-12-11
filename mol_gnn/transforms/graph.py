@@ -1,9 +1,11 @@
 from collections.abc import Collection
 from dataclasses import dataclass, field
+import textwrap
 
 import numpy as np
 import torch
 
+from mol_gnn.conf import REPR_INDENT
 from mol_gnn.data.models.graph import BatchedGraph, Graph
 from mol_gnn.transforms.atom import AtomTransform, MultiTypeAtomTransform
 from mol_gnn.transforms.base import Transform
@@ -11,7 +13,7 @@ from mol_gnn.transforms.bond import BondTransform, MultiTypeBondTransform
 from mol_gnn.types import Mol
 
 
-@dataclass
+@dataclass(repr=False)
 class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
     atom_transform: AtomTransform = field(default_factory=MultiTypeAtomTransform)
     bond_transform: BondTransform = field(default_factory=MultiTypeBondTransform)
@@ -39,3 +41,10 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
 
     def collate(self, inputs: Collection[Graph]) -> BatchedGraph:
         return BatchedGraph.from_graphs(inputs)
+
+    def __repr__(self) -> str:
+        text = "\n".join(
+            [f"(atom_transform): {self.atom_transform}", f"(bond_transform): {self.bond_transform}"]
+        )
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

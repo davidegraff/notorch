@@ -35,7 +35,7 @@ class InverseIndex[KT](Mapping[KT, int]):
         return iter(self.__k2i)
 
     def __repr__(self):
-        return repr(self.__k2i)
+        return str(list(map(str, self.__k2i.keys()))).replace("'", "")
 
 
 class InverseIndexWithUnknown[KT](InverseIndex[KT]):
@@ -52,12 +52,7 @@ class InverseIndexWithUnknown[KT](InverseIndex[KT]):
         return super().__len__() + 1
 
     def __repr__(self):
-        items_str = ", ".join(
-            [f"{repr(k)}: {repr(i)}" for k, i in self.items()] + [f"UNK: {len(self)-1}"]
-        )
-
-        return "".join(["{", items_str, "}"])
-
+        return super().__repr__() + " + <UNK>"
 
 @overload
 def build(choices: None, unknown_pad: bool) -> None: ...
