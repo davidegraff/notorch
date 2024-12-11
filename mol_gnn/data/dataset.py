@@ -6,12 +6,14 @@ from typing import Protocol
 
 # from jaxtyping import Array, Float
 import pandas as pd
+from rich.pretty import pretty_repr
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
 
-from mol_gnn.conf import INPUT_KEY_PREFIX, TARGET_KEY_PREFIX
+from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
 from mol_gnn.transforms.managed import ManagedTransform
+from mol_gnn.types import TransformConfig
 # from mol_gnn.transforms.base import JoinColumns
 
 
@@ -25,22 +27,26 @@ class Database[KT: (int, str), VT](Protocol):
 
 @dataclass
 class NotorchDataset(Dataset[dict]):
-    df: pd.DataFrame
-    transforms: Mapping[str, ManagedTransform]
-    databases: Mapping[str, Database]
-    target_groups: Mapping[str, list[str]]
-    # extra_data: Mapping[str, Float[Array, "n d"]]
-
     records: list[dict] = field(init=False)
     targets: Mapping[str, torch.Tensor] = field(init=False)
 
-    def __post_init__(self):
-        transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
-        self.records = self.df[transform_columns].to_dict("records")
-        self.targets = {
-            name: torch.as_tensor(self.df[columns].values)
-            for name, columns in self.target_groups.items()
-        }
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        transforms: Mapping[str, TransformConfig],
+        databases: Mapping[str, Database],
+        target_groups: Mapping[str, list[str]],
+    ):
+        self.transforms = {name: ManagedTransform(**kwargs) for name, kwargs in transforms.items()}
+        self.databases = databases
+        self.target_groups = target_groups
+
+    #     transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
+    #     self.records = self.df[transform_columns].to_dict("records")
+    #     self.targets = {
+    #         name: torch.as_tensor(self.df[columns].values)
+    #         for name, columns in self.target_groups.items()
+    #     }
 
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
@@ -73,16 +79,43 @@ class NotorchDataset(Dataset[dict]):
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
 
-    # def __repr__(self) -> str:
-    #     INDENT = 2 * " "
-    #     transform_items = "\n".join(f"({name}): {value}" for name, value in self.transforms.items())
-    #     transform_repr = [
-    #         "transforms: {",
-    #         textwrap.indent(transform_items, INDENT),
-    #         "}"
-    #     ]
+    def __repr__(self) -> str:
+        prettify = lambda obj: pretty_repr(obj, indent_size=2)  # noqa: E731
+        transform_repr = "\n".join(
+            [
+                "(transforms): {",
+                textwrap.indent(
+                    "\n".join(
+                        f"({name}): {prettify(transform)}"
+                        for name, transform in self.transforms.items()
+                    ),
+                    REPR_INDENT,
+                ),
+                "}",
+            ]
+        )
+        databases_repr = "\n".join(
+            [
+                "(databases): {",
+                textwrap.indent(
+                    "\n".join(f"({name}): {db}" for name, db in self.databases.items()), REPR_INDENT
+                ),
+                "}",
+            ]
+        )
+        databases_repr = "\n".join([f"(databases): {prettify(self.databases)}"])
+        target_groups_repr = "\n".join([f"(target_groups): {prettify(self.target_groups)}"])
 
-    #     return ""
+        return "\n".join(
+            [
+                f"{type(self).__name__}(",
+                textwrap.indent(transform_repr, REPR_INDENT),
+                textwrap.indent(databases_repr, REPR_INDENT),
+                textwrap.indent(target_groups_repr, REPR_INDENT),
+                ")",
+            ]
+        )
+
 
 """
 NotorchDataset(

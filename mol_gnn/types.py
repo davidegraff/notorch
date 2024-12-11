@@ -1,5 +1,5 @@
 # ruff: noqa: F401
-from typing import Callable, Literal, Required, TypedDict
+from typing import Callable, Literal, NamedTuple, Required, TypedDict
 
 from rdkit.Chem import Atom, Bond, Mol
 from torch import Tensor

@@ -52,11 +52,7 @@ class InverseIndexWithUnknown[KT](InverseIndex[KT]):
         return super().__len__() + 1
 
     def __repr__(self):
-        s = super().__repr__()[1:-1]
-
-        UNK_TOKEN = "<UNK>"
-        return f"[{s}, {UNK_TOKEN}]"
-
+        return super().__repr__() + " + <UNK>"
 
 @overload
 def build(choices: None, unknown_pad: bool) -> None: ...
