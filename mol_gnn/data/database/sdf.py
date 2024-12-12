@@ -1,13 +1,15 @@
 from dataclasses import dataclass, field
 from os import PathLike
+from typing import Iterator, Self
 
 import rdkit.Chem as Chem
 
+from mol_gnn.data.database.base import Database
 from mol_gnn.types import Mol
 
 
 @dataclass
-class SDFDatabase:
+class SDFDatabase(Database):
     path: PathLike
 
     supp: Chem.SDMolSupplier | None = field(init=False, default=None)
@@ -25,10 +27,14 @@ class SDFDatabase:
         except TypeError:
             raise ValueError
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         self.supp = Chem.SDMolSupplier(str(self.path))
 
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *exc):
         self.supp = None
+
+    def __iter__(self) -> Iterator:
+        with self:
+            return iter(self.supp)
