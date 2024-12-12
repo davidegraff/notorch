@@ -12,8 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
-from mol_gnn.data.database.base import Database
-from mol_gnn.transforms.managed import ManagedTransform
+from mol_gnn.databases.base import Database
+from mol_gnn.data.managers import TransformManager
 from mol_gnn.types import TransformConfig
 
 
@@ -28,7 +28,7 @@ class NotorchDataset(Dataset[dict]):
         databases: Mapping[str, Database],
         target_groups: Mapping[str, list[str]],
     ):
-        self.transforms = {name: ManagedTransform(**kwargs) for name, kwargs in transforms.items()}
+        self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
         self.databases = databases
         self.target_groups = target_groups
 

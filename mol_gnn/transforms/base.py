@@ -13,7 +13,6 @@ class Transform[S, T, T_batched](Protocol):
     """
 
     def __call__(self, input: S) -> T: ...
-
     def collate(self, inputs: Collection[T]) -> T_batched: ...
 
 

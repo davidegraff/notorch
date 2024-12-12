@@ -2,6 +2,7 @@ from collections.abc import Callable, Collection, Sized
 from dataclasses import InitVar, dataclass
 
 from jaxtyping import Float
+import numpy as np
 from numpy.typing import NDArray
 from rdkit.Chem.rdFingerprintGenerator import FingeprintGenerator64, GetMorganGenerator
 import torch
@@ -12,7 +13,7 @@ from mol_gnn.types import Mol
 
 
 @dataclass
-class MolToFP(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
+class MolToFP(Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]):
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
@@ -31,8 +32,8 @@ class MolToFP(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
 
         return torch.from_numpy(fp).float()
 
-    def collate(self, inputs: Collection[Tensor]) -> Tensor:
-        return torch.stack(inputs)
+    def collate(self, inputs: Collection[NDArray]) -> Tensor:
+        return torch.from_numpy(np.array(inputs)).to(torch.float)
 
     @classmethod
     def morgan(

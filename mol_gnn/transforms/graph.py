@@ -1,4 +1,3 @@
-from collections.abc import Collection
 from dataclasses import dataclass, field
 import textwrap
 
@@ -39,8 +38,7 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
 
         return Graph(V, E, edge_index, rev_index)
 
-    def collate(self, inputs: Collection[Graph]) -> BatchedGraph:
-        return BatchedGraph.from_graphs(inputs)
+    collate = BatchedGraph.from_graphs
 
     def __repr__(self) -> str:
         text = "\n".join(
