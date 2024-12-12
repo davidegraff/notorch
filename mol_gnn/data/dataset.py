@@ -1,7 +1,9 @@
 from collections.abc import Collection, Mapping
+from contextlib import ExitStack
 from copy import copy
 from dataclasses import dataclass, field
 import textwrap
+from typing import Self
 
 import pandas as pd
 from rich.pretty import pretty_repr
@@ -15,7 +17,6 @@ from mol_gnn.transforms.managed import ManagedTransform
 from mol_gnn.types import TransformConfig
 
 
-@dataclass
 class NotorchDataset(Dataset[dict]):
     records: list[dict] = field(init=False)
     targets: Mapping[str, torch.Tensor] = field(init=False)
@@ -49,11 +50,13 @@ class NotorchDataset(Dataset[dict]):
             sample[db.out_key] = db[db_key]
 
         return sample
-        # dicts = [transform(record) for transform in self.transforms.values()]
-        # out = reduce(lambda a, b: a | b, dicts, record)
-        # extra_transform_data = {k: v for k, v in self.extra_transforms.items()}
-        # extra_data = {key: value[idx] for key, value in self.extra_data.items()}
-        # return sample_data | extra_data | extra_transform_data
+
+    def __enter__(self) -> Self:
+        self.stack = ExitStack()
+        [self.stack.enter_context(db) for db in self.databases.values()]
+
+    def __exit__(self, *exc):
+        self.stack = self.stack.close()
 
     def collate(self, samples: Collection[dict]) -> TensorDict:
         batch = TensorDict({}, batch_size=len(samples))
