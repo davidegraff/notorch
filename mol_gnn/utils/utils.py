@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Iterable, Iterator, Self
+from typing import Iterator, Self
 
 
 class EnumMapping(StrEnum):
@@ -28,17 +28,3 @@ class EnumMapping(StrEnum):
     @classmethod
     def items(cls) -> Iterator[tuple[str, str]]:
         return zip(cls.keys(), cls.values())
-
-
-def pretty_shape(shape: Iterable[int]) -> str:
-    """Make a pretty string from an input shape
-
-    Example
-    -------
-    >>> X = np.random.rand(10, 4)
-    >>> X.shape
-    (10, 4)
-    >>> pretty_shape(X.shape)
-    '10 x 4'
-    """
-    return " x ".join(map(str, shape))
