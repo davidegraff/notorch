@@ -70,10 +70,11 @@ class NotorchDataset(Dataset[dict]):
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
 
-
     def __enter__(self) -> Self:
         self.stack = ExitStack()
         [self.stack.enter_context(db) for db in self.databases.values()]
+
+        return self
 
     def __exit__(self, *exc):
         self.stack = self.stack.close()

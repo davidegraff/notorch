@@ -15,6 +15,29 @@ class HDF5Database(Database[int, np.ndarray]):
     path: Final[PathLike]
     dataset: Final[str]
 
+    def __post_init__(self):
+        with h5py.File(self.path) as h5f:
+            self.X = h5f[self.dataset][:]
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        return self.X.shape
+
+    def __len__(self) -> int:
+        return len(self.X)
+
+    def __getitem__(self, idx: int) -> np.ndarray:
+        return self.X[idx]
+
+    def __iter__(self) -> Iterator[int]:
+        return iter(self.X)
+
+
+@dataclass
+class __HDF5DatabaseOnDisk(HDF5Database):
+    path: Final[PathLike]
+    dataset: Final[str]
+
     shape: Final[tuple[int, ...]] = field(init=False, repr=True)
     h5f: h5py.File | None = field(init=False, default=None, repr=False)
     dataset: h5py.Dataset | None = field(init=False, default=None, repr=False)

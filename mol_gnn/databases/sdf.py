@@ -12,11 +12,30 @@ from mol_gnn.types import Mol
 class SDFDatabase(Database):
     path: PathLike
 
-    supp: Chem.SDMolSupplier | None = field(init=False, default=None)
+    mols: list[Mol] = field(init=False)
+
+    def __post_init__(self):
+        with open(self.path) as supp:
+            self.mols = list(supp)
+
+    def __len__(self) -> int:
+        return len(self.mols)
+
+    def __getitem__(self, idx: int) -> Mol:
+        return self.mols[idx]
+
+    def __iter__(self) -> Iterator[Mol]:
+        return iter(self.mols)
+
+
+@dataclass
+class __SDFDatabaseOnDisk(SDFDatabase):
+    path: PathLike
 
     def __post_init__(self):
         with open(self.path) as f:
             self.__size = sum(1 for line in f if line.startswith("$$$$"))
+        self.supp = None
 
     def __len__(self) -> int:
         return self.__size
