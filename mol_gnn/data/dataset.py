@@ -12,9 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
-from mol_gnn.databases.base import Database
-from mol_gnn.data.managers import TransformManager
-from mol_gnn.types import TransformConfig
+from mol_gnn.data.managers import DatabaseManager, TransformManager
+from mol_gnn.types import DatabaseConfig, TransformConfig
 
 
 class NotorchDataset(Dataset[dict]):
@@ -25,44 +24,42 @@ class NotorchDataset(Dataset[dict]):
         self,
         df: pd.DataFrame,
         transforms: Mapping[str, TransformConfig],
-        databases: Mapping[str, Database],
+        databases: Mapping[str, DatabaseConfig],
         target_groups: Mapping[str, list[str]],
     ):
+        self.df = df
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
-        self.databases = databases
+        self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
         self.target_groups = target_groups
 
-    #     transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
-    #     self.records = self.df[transform_columns].to_dict("records")
-    #     self.targets = {
-    #         name: torch.as_tensor(self.df[columns].values)
-    #         for name, columns in self.target_groups.items()
-    #     }
+        transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
+        db_columns = list(set(db.in_key for db in self.databases.values()))
+        columns = transform_columns + db_columns
+        self.records = self.df[columns].to_dict("records")
+        self.targets = {
+            name: torch.as_tensor(self.df[columns].values)
+            for name, columns in self.target_groups.items()
+        }
 
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
+
         for transform in self.transforms.values():
-            sample = transform(sample)
+            sample = transform.update(sample)
+        for name, db in self.databases.items():
+            sample = db.update(sample)
         for name, group in self.targets.items():
             sample[name] = group[idx]
-        for name, db in self.databases.items():
-            db_key = sample[db.in_key]
-            sample[db.out_key] = db[db_key]
 
         return sample
-
-    def __enter__(self) -> Self:
-        self.stack = ExitStack()
-        [self.stack.enter_context(db) for db in self.databases.values()]
-
-    def __exit__(self, *exc):
-        self.stack = self.stack.close()
 
     def collate(self, samples: Collection[dict]) -> TensorDict:
         batch = TensorDict({}, batch_size=len(samples))
 
         for transform in self.transforms.values():
             batch[f"{INPUT_KEY_PREFIX}.{transform.out_key}"] = transform.collate(samples)
+        for db in self.databases.values():
+            batch[f"{INPUT_KEY_PREFIX}.{db.out_key}"] = db.collate(samples)
         for name in self.target_groups:
             batch[f"{TARGET_KEY_PREFIX}.{name}"] = torch.as_tensor(
                 [sample[name] for sample in samples]
@@ -72,6 +69,14 @@ class NotorchDataset(Dataset[dict]):
 
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
+
+
+    def __enter__(self) -> Self:
+        self.stack = ExitStack()
+        [self.stack.enter_context(db) for db in self.databases.values()]
+
+    def __exit__(self, *exc):
+        self.stack = self.stack.close()
 
     def __repr__(self) -> str:
         prettify = lambda obj: pretty_repr(obj, indent_size=2)  # noqa: E731
