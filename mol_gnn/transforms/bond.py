@@ -6,9 +6,9 @@ from typing import Protocol
 
 from jaxtyping import Int
 from rdkit.Chem.rdchem import BondStereo, BondType
-import torch
 from torch import Tensor
-from torch.nn import functional as F
+import torch
+import torch.nn.functional as F
 
 from mol_gnn.conf import REPR_INDENT
 from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
@@ -28,7 +28,6 @@ BOND_STEREOS = [
 
 class BondTransform(Protocol):
     def __len__(self) -> int: ...
-
     def __call__(self, input: Iterable[Bond]) -> Int[Tensor, "n t"]: ...
 
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import ClassVar
 
 from rdkit import Chem
 
@@ -10,6 +11,9 @@ SANITIZE_OPS = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJ
 
 @dataclass
 class SmiToMol(Transform[str, Mol, list[Mol]]):
+    _in_key_: ClassVar[str] = "smi"
+    _out_key_: ClassVar[str] = "mol"
+
     keep_h: bool = True
     add_h: bool = False
 

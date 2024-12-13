@@ -36,7 +36,6 @@ FORMAL_CHARGES = [-1, -2, 1, 2, 0]
 
 class AtomTransform(Protocol):
     def __len__(self) -> int: ...
-
     def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "n t"]: ...
 
 

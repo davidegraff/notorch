@@ -1,5 +1,6 @@
 from collections.abc import Callable, Collection, Sized
 from dataclasses import InitVar, dataclass
+from typing import ClassVar
 
 from jaxtyping import Float
 import numpy as np
@@ -14,6 +15,9 @@ from mol_gnn.types import Mol
 
 @dataclass
 class MolToFP(Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]):
+    _in_key_: ClassVar[str] = "mol"
+    _out_key_: ClassVar[str] = "fp"
+
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
