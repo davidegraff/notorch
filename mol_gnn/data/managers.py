@@ -1,71 +1,88 @@
+from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass
 import textwrap
+from typing import Protocol
 
 from mol_gnn.conf import REPR_INDENT
 from mol_gnn.databases.base import Database
 from mol_gnn.transforms.base import Transform
 
 
+class Manager[A: (Transform, Database)](ABC):
+    """A :class:`Manager` manages an input :attr:`asset`."""
+
+    asset: A
+    in_key: str
+    out_key: str
+
+    @abstractmethod
+    def update(self, sample: dict) -> dict: ...
+
+    def collate(self, samples: Collection[dict]):
+        try:
+            inputs = [sample[self.out_key] for sample in samples]
+        except KeyError as e:
+            raise ValueError(
+                f"input samples must be output from `{type(self).__name__}.update()`!"
+            ) from e
+
+        return self.asset.collate(inputs)
+
+
 @dataclass
-class TransformManager[S, T, T_batched]:
-    """A :class:`ManagedTransform` wraps around an input :class:`Transform` that reads and writes
+class TransformManager(Manager[Transform]):
+    """A :class:`TransformManager` wraps around an input :class:`Transform` that reads and writes
     from to an input dictionary.
 
     It's like a :class:`~tensordict.nn.TensorDictModule` analog for :class:`Transform`s.
     """
 
-    transform: Transform[S, T, T_batched]
-    in_key: str
-    out_key: str
+    asset: Transform
+    in_key: str = None
+    out_key: str = None
 
-    def collate(self, samples: Collection[dict]) -> T_batched:
-        inputs = [sample[self.out_key] for sample in samples]
+    def __post_init__(self):
+        if self.in_key is None:
+            self.in_key = self.asset._in_key_
+        if self.out_key is None:
+            self.out_key = self.asset._out_key_
 
-        return self.transform.collate(inputs)
-
-    def __call__(self, sample: dict) -> dict:
-        sample[self.out_key] = self.transform(sample[self.in_key])
+    def update(self, sample: dict) -> dict:
+        sample[self.out_key] = self.asset(sample[self.in_key])
 
         return sample
 
     def __repr__(self) -> str:
-        text = "\n".join([
-            f"(transform): {self.transform}",
-            f"(in_key): {repr(self.in_key)}",
-            f"(out_key): {repr(self.out_key)}"
-        ])
+        text = "\n".join(
+            [
+                f"(transform): {self.asset}",
+                f"(in_key): {repr(self.in_key)}",
+                f"(out_key): {repr(self.out_key)}",
+            ]
+        )
 
         return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
 
 
 @dataclass
-class DatabaseManager[KT, VT, T_batched]:
-    """A :class:`ManagedTransform` wraps around an input :class:`Transform` that reads and writes
-    from to an input dictionary.
-
-    It's like a :class:`~tensordict.nn.TensorDictModule` analog for :class:`Transform`s.
-    """
-
-    db: Database[KT, VT]
+class DatabaseManager(Manager[Database]):
+    asset: Database
     in_key: str
     out_key: str
 
-    def __getitem__(self, sample: dict) -> dict:
-        sample[self.out_key] = self.db[sample[self.in_key]]
+    def update(self, sample: dict) -> dict:
+        sample[self.out_key] = self.asset[sample[self.in_key]]
 
         return sample
 
-    def collate(self, samples: Collection[dict]) -> T_batched:
-        inputs = [sample[self.out_key] for sample in samples]
-
-        return self.db.collate(inputs)
-
     def __repr__(self) -> str:
-        text = "\n".join([
-            f"(database): {self.db}",
-            f"(in_key): {repr(self.in_key)}",
-            f"(out_key): {repr(self.out_key)}"
-        ])
+        text = "\n".join(
+            [
+                f"(database): {self.asset}",
+                f"(in_key): {repr(self.in_key)}",
+                f"(out_key): {repr(self.out_key)}",
+            ]
+        )
 
         return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

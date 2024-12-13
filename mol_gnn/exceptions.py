@@ -1,6 +1,18 @@
 from typing import Iterable
 
-from mol_gnn.utils import pretty_shape
+
+def pretty_shape(shape: Iterable[int]) -> str:
+    """Make a pretty string from an input shape
+
+    Example
+    -------
+    >>> X = np.random.rand(10, 4)
+    >>> X.shape
+    (10, 4)
+    >>> pretty_shape(X.shape)
+    '10 x 4'
+    """
+    return " x ".join(map(str, shape))
 
 
 class InvalidShapeError(ValueError):
