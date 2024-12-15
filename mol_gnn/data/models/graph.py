@@ -41,13 +41,10 @@ class Graph:
     def to(self, device: Device) -> Self:
         self.__device = device
 
-        device = self.device
         self.V = self.V.to(device)
         self.E = self.E.to(device)
         self.edge_index = self.edge_index.to(device)
         self.rev_index = self.rev_index.to(device)
-        self.batch_node_index = self.batch_node_index.to(device)
-        self.batch_edge_index = self.batch_edge_index.to(device)
 
         return self
 
@@ -137,7 +134,7 @@ class Graph:
             new_node_ids = (pi @ P).multinomial(num_walks, replacement=True)
             node_ids.append(new_node_ids)
 
-        node_ids = torch.stack(node_ids, -1)
+        node_ids: Tensor = torch.stack(node_ids, -1)
         if return_edge_ids:
             edge_ids = self.dense2sparse[node_ids[..., :-1], node_ids[..., 1:]]
         else:
@@ -175,7 +172,9 @@ class BatchedGraph(Graph):
     """The number of graphs, if known. Otherwise, will be estimated via
     :code:`batch_node_index.max() + 1`"""
 
-    def __post_init__(self, size: int | None):
+    def __post_init__(self, device_: torch.device | str | int | None, size: int | None):
+        super().__post_init__(device_)
+
         self.__size = self.batch_node_index.max() + 1 if size is None else size
 
     @classmethod
@@ -193,8 +192,8 @@ class BatchedGraph(Graph):
             Es.append(G.E)
             batch_edge_indices.append(G.edge_index + offset)
             rev_indices.append(G.rev_index + offset)
-            batch_node_indices.append([i] * len(G.V))
-            batch_edge_indices.append([i] * len(G.E))
+            batch_node_indices.extend([i] * len(G.V))
+            batch_edge_indices.extend([i] * len(G.E))
 
             offset += len(G.V)
 
@@ -202,8 +201,8 @@ class BatchedGraph(Graph):
         E = torch.cat(Es).float()
         edge_index = torch.cat(batch_edge_indices, dim=1).long()
         rev_index = torch.cat(rev_indices).long()
-        batch_node_index = torch.cat(batch_node_indices).long()
-        batch_edge_index = torch.cat(batch_edge_indices).long()
+        batch_node_index = torch.tensor(batch_node_indices, dtype=torch.long)
+        batch_edge_index = torch.tensor(batch_edge_indices, dtype=torch.long)
         size = i + 1
 
         return cls(

@@ -1,39 +1,42 @@
-from collections.abc import Sized
+from collections.abc import Callable, Sized
 from dataclasses import InitVar, dataclass
+from typing import ClassVar
 
 from jaxtyping import Float
+from numpy.typing import NDArray
 from rdkit.Chem.rdFingerprintGenerator import FingeprintGenerator64, GetMorganGenerator
 import torch
 from torch import Tensor
 
 from mol_gnn.transforms.base import Transform
 from mol_gnn.types import Mol
+from mol_gnn.utils.mixins import CollateNDArrayMixin
 
 
 @dataclass
-class FingerprintFeaturizer(Sized, Transform[Mol, Float[Tensor, "d"]]):
+class MolToFP(
+    CollateNDArrayMixin, Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]
+):
+    _in_key_: ClassVar[str] = "mol"
+    _out_key_: ClassVar[str] = "fp"
+
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
-    def __post_init__(self, use_count: bool = True):
-        self.func = (
-            self.fpgen.GetCountFingerprintAsNumPy if use_count else self.fpgen.GetFingerprintAsNumPy
+    def __post_init__(self, bit_fingerprint: bool = True):
+        self.func: Callable[[Mol], Float[NDArray, "d"]] = (
+            self.fpgen.GetFingerprintAsNumPy
+            if bit_fingerprint
+            else self.fpgen.GetCountFingerprintAsNumPy
         )
 
     def __len__(self) -> int:
         return self.fpgen.GetOptions().fpSize
 
-    # @singledispatchmethod
-    def __call__(self, input) -> Float[Tensor, "d"]:
+    def __call__(self, input: Mol) -> Float[Tensor, "d"]:
         fp = self.func(input)
 
         return torch.from_numpy(fp).float()
-
-    # @__call__.register
-    # def _(self, input: Iterable[Mol]):
-    #     fps = [self.func(mol) for mol in input]
-
-    #     return torch.from_numpy(np.stack(fps)).float()
 
     @classmethod
     def morgan(

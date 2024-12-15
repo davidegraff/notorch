@@ -1,12 +1,11 @@
 from abc import abstractmethod
+
 from jaxtyping import Bool, Float
 from numpy.typing import ArrayLike
 import torch
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import Tensor
-
-from mol_gnn.utils import ClassRegistry
 
 
 class _LossFunctionBase(nn.Module):
@@ -15,9 +14,7 @@ class _LossFunctionBase(nn.Module):
     def __init__(self, task_weights: Float[ArrayLike, "*t"] = 1.0) -> None:
         super().__init__()
 
-        self.task_weights = self.register_buffer(
-            "task_weights", torch.atleast_2d(torch.as_tensor(task_weights))
-        )
+        self.register_buffer("task_weights", torch.atleast_2d(torch.as_tensor(task_weights)))
 
     @abstractmethod
     def forward(
@@ -58,10 +55,6 @@ class _BoundedMixin:
         return super().forward(preds, targets, mask, sample_weights)
 
 
-LossFunctionRegistry = ClassRegistry()
-
-
-@LossFunctionRegistry.register("mse")
 class MSE(_LossFunctionBase):
     def forward(
         self,
@@ -76,12 +69,10 @@ class MSE(_LossFunctionBase):
         return self._reduce(L, mask, sample_weights)
 
 
-@LossFunctionRegistry.register("bounded-mse")
 class BoundedMSE(_BoundedMixin, MSE):
     pass
 
 
-@LossFunctionRegistry.register("mve")
 class MeanVarianceEstimation(_LossFunctionBase):
     """Calculate the loss using Eq. 9 from [nix1994]_
 
@@ -99,6 +90,7 @@ class MeanVarianceEstimation(_LossFunctionBase):
         *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
+        **kwargs,
     ) -> Float[Tensor, ""]:
         mean, var = torch.unbind(preds, dim=-1)
 
@@ -109,7 +101,6 @@ class MeanVarianceEstimation(_LossFunctionBase):
         return self._reduce(L, mask, sample_weights)
 
 
-@LossFunctionRegistry.register("evidential")
 class Evidential(_LossFunctionBase):
     """Caculate the loss using Eq. **TODO** from [soleimany2021]_
 
@@ -155,7 +146,6 @@ class Evidential(_LossFunctionBase):
         return f"v_kl={self.v_kl:0.1f}, eps={self.eps:0.1e}"
 
 
-@LossFunctionRegistry.register("bce")
 class BinaryCrossEntropy(_LossFunctionBase):
     def forward(
         self,
@@ -170,8 +160,6 @@ class BinaryCrossEntropy(_LossFunctionBase):
         return self._reduce(L, mask, sample_weights)
 
 
-
-@LossFunctionRegistry.register("xent")
 class CrossEntropy(_LossFunctionBase):
     def forward(
         self,
@@ -217,7 +205,6 @@ class MccMixin:
         return L.mean()
 
 
-@LossFunctionRegistry.register("binary-mcc")
 class BinaryMCCLoss(LossFunctionBase, MccMixin):
     def _forward_unreduced(self, Y_hat, Y, mask, sample_weights, *args) -> Tensor:
         TP = (Y * Y_hat * sample_weights * mask).sum(0, keepdim=True)
@@ -230,7 +217,6 @@ class BinaryMCCLoss(LossFunctionBase, MccMixin):
         return 1 - MCC
 
 
-@LossFunctionRegistry.register("multiclass-mcc")
 class MulticlassMCCLoss(LossFunctionBase, MccMixin):
     def _forward_unreduced(self, Y_hat, Y, mask, sample_weights, *args) -> Tensor:
         device = Y_hat.device
@@ -257,7 +243,6 @@ class MulticlassMCCLoss(LossFunctionBase, MccMixin):
 '''
 
 
-@LossFunctionRegistry.register("dirichlet")
 class DirichletLoss(_LossFunctionBase):
     """Uses the loss function from [sensoy2018]_ based on the implementation at [sensoyGithub]_
 
@@ -280,6 +265,7 @@ class DirichletLoss(_LossFunctionBase):
         *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
+        **kwargs,
     ) -> Float[Tensor, ""]:
         targets = F.one_hot(targets, num_classes=2)
 
@@ -313,7 +299,6 @@ class _ThresholdMixin:
     threshold: float | None = None
 
 
-@LossFunctionRegistry.register("sid")
 class SIDLoss(LossFunctionBase, _ThresholdMixin):
     def _forward_unreduced(self, Y_hat: Tensor, Y: Tensor, mask: Tensor, *args) -> Tensor:
         if self.threshold is not None:
@@ -327,7 +312,6 @@ class SIDLoss(LossFunctionBase, _ThresholdMixin):
         return (preds_norm / Y).log() * preds_norm + (Y / preds_norm).log() * Y
 
 
-@LossFunctionRegistry.register(["earthmovers", "wasserstein"])
 class WassersteinLoss(LossFunctionBase, _ThresholdMixin):
     def _forward_unreduced(self, Y_hat: Tensor, Y: Tensor, mask: Tensor, *args) -> Tensor:
         if self.threshold is not None:

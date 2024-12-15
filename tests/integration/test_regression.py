@@ -89,7 +89,7 @@ def test_overfit(mp: nn.MessagePassing, dataloader: DataLoader):
 
     errors = torch.cat(errors)
     mse = errors.square().mean().item()
-    
+
     assert mse <= 1e-3
 
 
@@ -132,5 +132,5 @@ def test_lipo(mp, lipo_data):
 
     errors = Y_hat - test_dataset.Y
     rmse = np.sqrt(np.mean(errors ** 2))
-    
+
     assert rmse <= 0.8

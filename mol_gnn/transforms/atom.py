@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence, Sized
+from collections.abc import Iterable, Sequence
+import textwrap
+from typing import Protocol
 
 from jaxtyping import Int
-from rdkit.Chem import Atom
 from rdkit.Chem.rdchem import ChiralType, HybridizationType
 import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from mol_gnn.transforms.base import Transform
-from mol_gnn.transforms.utils.index_map import IndexMapWithUnknown, build
+from mol_gnn.conf import REPR_INDENT
+from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
+from mol_gnn.types import Atom
 
 ELEMENTS = ["H", "C", "N", "O", "F", "P", "S", "Cl", "Br", "I"]
 DEGREES = [0, 1, 2, 3]
@@ -32,9 +34,14 @@ NUM_HS = [0, 1, 2, 3, 4]
 FORMAL_CHARGES = [-1, -2, 1, 2, 0]
 
 
-class ElementOnlyAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V 1"]]):
+class AtomTransform(Protocol):
+    def __len__(self) -> int: ...
+    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "n t"]: ...
+
+
+class ElementOnlyAtomTransform:
     def __init__(self, elements: Sequence[str] = ELEMENTS):
-        self.element_map = IndexMapWithUnknown(elements)
+        self.element_map = InverseIndexWithUnknown(elements)
 
     def __len__(self) -> int:
         return len(self.element_map)
@@ -43,13 +50,13 @@ class ElementOnlyAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V 1
     def num_types(self) -> int:
         return 1
 
-    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "V d"]:
+    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "n 1"]:
         types = [[self.element_map[atom.GetSymbol()]] for atom in input]
 
         return torch.tensor(types)
 
 
-class MultiTypeAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V t"]]):
+class MultiTypeAtomTransform:
     def __init__(
         self,
         elements: Sequence[str] | None = ELEMENTS,
@@ -84,11 +91,12 @@ class MultiTypeAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V t"]
             if index_map is not None
         ]
 
+        self.__num_types = sum(sizes)
         self.sizes = torch.tensor(sizes)
         self.offset = F.pad(self.sizes.cumsum(dim=0), [1, 0])[:-1]
 
     def __len__(self) -> int:
-        return self.sizes.sum()
+        return self.__num_types
 
     @property
     def num_types(self) -> int:
@@ -114,13 +122,28 @@ class MultiTypeAtomTransform(Sized, Transform[Iterable[Atom], Int[Tensor, "V t"]
 
         return types
 
-    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "V d"]:
+    def __call__(self, input: Iterable[Atom]) -> Int[Tensor, "n t"]:
         types = [self._transform_single(atom) for atom in input]
 
         return torch.tensor(types) + self.offset.unsqueeze(0)
 
-    # @singledispatchmethod
-    # def __call__(self, input) -> Int[Tensor, "d"]:
-    #     types = self._transform_single(input)
+    def __repr__(self) -> str:
+        lines = []
 
-    #     return torch.tensor(types) + self.offset
+        if self.element_map is not None:
+            lines.append(f"(elements): {self.element_map}")
+        if self.hybrid_map is not None:
+            lines.append(f"(hybridizations): {self.hybrid_map}")
+        if self.chirality_map is not None:
+            lines.append(f"(chiralities): {self.chirality_map}")
+        if self.degree_map is not None:
+            lines.append(f"(degrees): {self.degree_map}")
+        if self.fc_map is not None:
+            lines.append(f"(formal_charges): {self.fc_map}")
+        if self.num_hs_map is not None:
+            lines.append(f"(num_hs): {self.num_hs_map}")
+        if self.aromaticity_map is not None:
+            lines.append(f"(aromaticity): {self.aromaticity_map}")
+        text = "\n".join(lines)
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

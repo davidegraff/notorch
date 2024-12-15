@@ -1,26 +1,25 @@
 from dataclasses import dataclass, field
-from typing import Iterable
+import textwrap
+from typing import ClassVar
 
-from jaxtyping import Int
 import numpy as np
 import torch
-from torch import Tensor
 
-from mol_gnn.data.models.graph import Graph
-from mol_gnn.transforms.atom import MultiTypeAtomTransform
+from mol_gnn.conf import REPR_INDENT
+from mol_gnn.data.models.graph import BatchedGraph, Graph
+from mol_gnn.transforms.atom import AtomTransform, MultiTypeAtomTransform
 from mol_gnn.transforms.base import Transform
-from mol_gnn.transforms.bond import MultiTypeBondTransform
-from mol_gnn.types import Atom, Bond, Mol
+from mol_gnn.transforms.bond import BondTransform, MultiTypeBondTransform
+from mol_gnn.types import Mol
 
 
-@dataclass
-class MolToGraph(Transform[Mol, Graph]):
-    atom_transform: Transform[Iterable[Atom], Int[Tensor, "V t_v"]] = field(
-        default_factory=MultiTypeAtomTransform
-    )
-    bond_transform: Transform[Iterable[Bond], Int[Tensor, "E t_e"]] = field(
-        default_factory=MultiTypeBondTransform
-    )
+@dataclass(repr=False)
+class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
+    _in_key_: ClassVar[str] = "mol"
+    _out_key_: ClassVar[str] = "G"
+
+    atom_transform: AtomTransform = field(default_factory=MultiTypeAtomTransform)
+    bond_transform: BondTransform = field(default_factory=MultiTypeBondTransform)
 
     @property
     def node_dim(self) -> int:
@@ -42,3 +41,12 @@ class MolToGraph(Transform[Mol, Graph]):
         rev_index = torch.from_numpy(np.arange(len(E)).reshape(-1, 2)[:, ::-1].ravel())
 
         return Graph(V, E, edge_index, rev_index)
+
+    collate = BatchedGraph.from_graphs
+
+    def __repr__(self) -> str:
+        text = "\n".join(
+            [f"(atom_transform): {self.atom_transform}", f"(bond_transform): {self.bond_transform}"]
+        )
+
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

@@ -9,12 +9,8 @@ from torch import Tensor
 import torchmetrics.functional.classification as classification
 
 from mol_gnn.nn.loss import _BoundedMixin, _LossFunctionBase
-from mol_gnn.utils import ClassRegistry
-
-MetricRegistry = ClassRegistry()
 
 
-@MetricRegistry.register("mae")
 class MAE(_LossFunctionBase):
     def forward(
         self,
@@ -29,7 +25,6 @@ class MAE(_LossFunctionBase):
         return self._reduce(L, mask, sample_weights)
 
 
-@MetricRegistry.register("rmse")
 class RMSE(_LossFunctionBase):
     def forward(
         self,
@@ -44,17 +39,14 @@ class RMSE(_LossFunctionBase):
         return self._reduce(L.sqrt(), mask, sample_weights)
 
 
-@MetricRegistry.register("bounded-mae")
 class BoundedMAE(_BoundedMixin, MAE):
     pass
 
 
-@MetricRegistry.register("bounded-rmse")
 class BoundedRMSE(_BoundedMixin, RMSE):
     pass
 
 
-@MetricRegistry.register("r2")
 class R2(_LossFunctionBase):
     def forward(
         self,
@@ -82,7 +74,6 @@ class _ClassificationMetricBase(nn.Module):
         return f"task={self.task}"
 
 
-@MetricRegistry.register("roc")
 class AUROC(_ClassificationMetricBase):
     def forward(
         self,
@@ -94,10 +85,9 @@ class AUROC(_ClassificationMetricBase):
     ) -> Float[Tensor, ""]:
         targets = torch.where(mask, targets, -1).long()
 
-        return classification.auroc(preds, targets, self.task, ignore_index=-1)
+        return classification.auroc(preds, targets, self.task, ignore_index=-1)  # type: ignore
 
 
-@MetricRegistry.register("prc")
 class AUPRC(_ClassificationMetricBase):
     def forward(
         self,
@@ -112,7 +102,6 @@ class AUPRC(_ClassificationMetricBase):
         return classification.average_precision(preds, targets, self.task, ignore_index=-1)
 
 
-@MetricRegistry.register("accuracy")
 class Accuracy(_LossFunctionBase):
     def __init__(
         self,
@@ -146,7 +135,6 @@ class Accuracy(_LossFunctionBase):
         return f"task={self.task}, threshold={self.threshold:0.1f}"
 
 
-@MetricRegistry.register("F1")
 class F1(nn.Module):
     def __init__(self, task: Literal["binary", "multilabel"], threshold: float = 0.5):
         super().__init__()

@@ -5,8 +5,8 @@ from typing import Callable
 import lightning as L
 from tensordict import TensorDict
 from tensordict.nn import TensorDictModule, TensorDictSequential
-import torch.nn as nn
 from torch import Tensor
+import torch.nn as nn
 from torch.optim import Adam, Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
@@ -82,7 +82,7 @@ class SimpleModel(L.LightningModule):
     ):
         super().__init__()
 
-        modules = [
+        model_modules = [
             TensorDictModule(
                 module_config["module"],
                 module_config["in_keys"],
@@ -114,14 +114,14 @@ class SimpleModel(L.LightningModule):
 
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
-        self.model = TensorDictSequential(*modules, selected_out_keys=selected_out_keys)
+        self.model = TensorDictSequential(*model_modules, selected_out_keys=selected_out_keys)
         self.loss_functions = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
         self.optim_factory = optim_factory
         self.lr_sched_factory = lr_sched_factory
 
-    def forward(self, td: TensorDict) -> Tensor:
-        return self.model(td)
+    def forward(self, batch: TensorDict) -> Tensor:
+        return self.model(batch)
 
     def training_step(self, batch: TensorDict, batch_idx: int = 0):
         batch = self(batch)
@@ -162,6 +162,9 @@ class SimpleModel(L.LightningModule):
 
     def configure_optimizers(self):
         optimizer = self.optim_factory(self.parameters())
+        if self.lr_sched_factory is None:
+            return optimizer
+
         lr_scheduler = self.lr_sched_factory(optimizer)
 
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}

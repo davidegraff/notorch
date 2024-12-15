@@ -34,7 +34,7 @@ class GATv2Layer(nn.Module):
 
         scores = self.a(self.act(Q + K + bias))
         alpha = scatter_softmax(scores, dest, dim=0)
-        H = scatter(alpha * V, dest, dim=0, dim_size=len(G), reduce="sum")
+        H = scatter(alpha * V, dest, dim=0, dim_size=G.num_nodes, reduce="sum")
 
         return Graph(H, G.E, G.edge_index, G.rev_index)
 
@@ -65,7 +65,7 @@ class MultiheadedSelfAttentionLayer(nn.Module):
         self.W_v = nn.Sequential(
             nn.Linear(node_dim, embed_dim), nn.Unflatten(-1, (-1, num_heads, head_dim))
         )
-        self.bias = nn.Sequential(edge_dim, 1)
+        self.bias = nn.Linear(edge_dim, 1)
         self.sqrt_dk = head_dim**1 / 2
 
         self.W_v = nn.Sequential(
@@ -83,7 +83,7 @@ class MultiheadedSelfAttentionLayer(nn.Module):
 
         scores = einsum("Ehd,Ehd->Eh", Q, K) / self.sqrt_dk + bias
         alpha = scatter_softmax(scores, dest, dim=0).unsqueeze(-1)
-        H = scatter(alpha * V, dest, dim=0, dim_size=len(G), reduce="sum")
+        H = scatter(alpha * V, dest, dim=0, dim_size=G.num_nodes, reduce="sum")
         O = self.W_o(H)
 
         return Graph(O, G.E, G.edge_index, G.rev_index)
