@@ -1,9 +1,6 @@
 from collections.abc import Collection, Mapping
-from contextlib import ExitStack
 from copy import copy
-from dataclasses import dataclass, field
 import textwrap
-from typing import Self
 
 import pandas as pd
 from rich.pretty import pretty_repr
@@ -17,20 +14,20 @@ from mol_gnn.types import DatabaseConfig, TransformConfig
 
 
 class NotorchDataset(Dataset[dict]):
-    records: list[dict] = field(init=False)
-    targets: Mapping[str, torch.Tensor] = field(init=False)
+    # records: list[dict] = field(init=False)
+    # targets: Mapping[str, torch.Tensor] = field(init=False)
 
     def __init__(
         self,
         df: pd.DataFrame,
-        transforms: Mapping[str, TransformConfig],
         databases: Mapping[str, DatabaseConfig],
         target_groups: Mapping[str, list[str]],
+        transforms: Mapping[str, TransformConfig],
     ):
         self.df = df
-        self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
         self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
         self.target_groups = target_groups
+        self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
 
         transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
         db_columns = list(set(db.in_key for db in self.databases.values()))
@@ -44,10 +41,10 @@ class NotorchDataset(Dataset[dict]):
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
 
-        for transform in self.transforms.values():
-            sample = transform.update(sample)
         for name, db in self.databases.items():
             sample = db.update(sample)
+        for transform in self.transforms.values():
+            sample = transform.update(sample)
         for name, group in self.targets.items():
             sample[name] = group[idx]
 
@@ -70,14 +67,14 @@ class NotorchDataset(Dataset[dict]):
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
 
-    def __enter__(self) -> Self:
-        self.stack = ExitStack()
-        [self.stack.enter_context(db) for db in self.databases.values()]
+    # def __enter__(self) -> Self:
+    #     self.stack = ExitStack()
+    #     [self.stack.enter_context(db) for db in self.databases.values()]
 
-        return self
+    #     return self
 
-    def __exit__(self, *exc):
-        self.stack = self.stack.close()
+    # def __exit__(self, *exc):
+    #     self.stack = self.stack.close()
 
     def __repr__(self) -> str:
         prettify = lambda obj: pretty_repr(obj, indent_size=2)  # noqa: E731

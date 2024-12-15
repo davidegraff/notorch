@@ -1,9 +1,8 @@
-from collections.abc import Callable, Collection, Sized
+from collections.abc import Callable, Sized
 from dataclasses import InitVar, dataclass
 from typing import ClassVar
 
 from jaxtyping import Float
-import numpy as np
 from numpy.typing import NDArray
 from rdkit.Chem.rdFingerprintGenerator import FingeprintGenerator64, GetMorganGenerator
 import torch

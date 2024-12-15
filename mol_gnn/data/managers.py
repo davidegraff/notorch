@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass
 import textwrap
-from typing import Protocol
 
 from mol_gnn.conf import REPR_INDENT
 from mol_gnn.databases.base import Database
@@ -22,10 +21,11 @@ class Manager[A: (Transform, Database)](ABC):
     def collate(self, samples: Collection[dict]):
         try:
             inputs = [sample[self.out_key] for sample in samples]
-        except KeyError as e:
-            raise ValueError(
-                f"input samples must be output from `{type(self).__name__}.update()`!"
-            ) from e
+        except KeyError:
+            raise KeyError(
+                f"arg 'samples' is missing key input key '{self.in_key}'! "
+                f"Is this input the result of `{type(self).__name__}.update()`?"
+            )
 
         return self.asset.collate(inputs)
 
