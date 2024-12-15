@@ -9,7 +9,7 @@ from mol_gnn.types import Mol
 
 
 @dataclass
-class SDFDatabase(Database):
+class SDFDatabase(Database[int, Mol, list[Mol]]):
     path: PathLike
 
     mols: list[Mol] = field(init=False)
@@ -26,6 +26,8 @@ class SDFDatabase(Database):
 
     def __iter__(self) -> Iterator[Mol]:
         return iter(self.mols)
+
+    collate = list
 
 
 @dataclass

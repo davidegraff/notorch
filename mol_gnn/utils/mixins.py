@@ -1,5 +1,17 @@
+from collections.abc import Collection
 import inspect
-from typing import Any, Collection
+from typing import Any
+
+from jaxtyping import Num
+from numpy.typing import NDArray
+import numpy as np
+from torch import Tensor
+import torch
+
+
+class CollateNDArrayMixin:
+    def collate(self, inputs: Collection[Num[NDArray, "d"]]) -> Num[Tensor, "n d"]:
+        return torch.from_numpy(np.array(inputs)).to(torch.float)
 
 
 class ReprMixin:

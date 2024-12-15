@@ -5,13 +5,15 @@ from typing import Final, Self
 
 import h5py
 import numpy as np
+from torch import Tensor
 
 from mol_gnn.databases.base import Database
 from mol_gnn.exceptions import ClosedDatabaseError
+from mol_gnn.utils.mixins import CollateNDArrayMixin
 
 
 @dataclass
-class HDF5Database(Database[int, np.ndarray]):
+class HDF5Database(CollateNDArrayMixin, Database[int, np.ndarray, Tensor]):
     path: Final[PathLike]
     dataset: Final[str]
 

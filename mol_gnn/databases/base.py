@@ -1,9 +1,9 @@
 from abc import abstractmethod
 from collections.abc import Collection, Mapping
-from contextlib import AbstractContextManager
+# from contextlib import AbstractContextManager
 
 
-class Database[KT, VT, VT_batched](Mapping[KT, VT], AbstractContextManager):
+class Database[KT, VT, VT_batched](Mapping[KT, VT]):
     """A :class:`Database` is a mapping from keys to values that is intended to
     be used as a context manager.
 

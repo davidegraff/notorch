@@ -1,17 +1,18 @@
 from collections.abc import Iterator
 from dataclasses import InitVar, dataclass, field
 from os import PathLike
-from typing import Final, Self
+from typing import Final
 
 import numpy as np
 from numpy.lib.npyio import NpzFile
+from torch import Tensor
 
 from mol_gnn.databases.base import Database
-from mol_gnn.exceptions import ClosedDatabaseError
+from mol_gnn.utils.mixins import CollateNDArrayMixin
 
 
 @dataclass
-class NPZDatabase(Database[int, np.ndarray]):
+class NPZDatabase(CollateNDArrayMixin, Database[int, np.ndarray, Tensor]):
     path: Final[PathLike]
     key: Final[str]
 

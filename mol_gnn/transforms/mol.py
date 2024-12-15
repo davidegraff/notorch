@@ -11,10 +11,13 @@ from torch import Tensor
 
 from mol_gnn.transforms.base import Transform
 from mol_gnn.types import Mol
+from mol_gnn.utils.mixins import CollateNDArrayMixin
 
 
 @dataclass
-class MolToFP(Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]):
+class MolToFP(
+    CollateNDArrayMixin, Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]
+):
     _in_key_: ClassVar[str] = "mol"
     _out_key_: ClassVar[str] = "fp"
 
@@ -35,9 +38,6 @@ class MolToFP(Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]):
         fp = self.func(input)
 
         return torch.from_numpy(fp).float()
-
-    def collate(self, inputs: Collection[NDArray]) -> Tensor:
-        return torch.from_numpy(np.array(inputs)).to(torch.float)
 
     @classmethod
     def morgan(
