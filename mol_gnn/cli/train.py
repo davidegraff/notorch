@@ -8,7 +8,6 @@ from rich import print
 # import torch.nn as nn
 
 from mol_gnn.data.dataset import NotorchDataset
-from mol_gnn.lightning_models.model import SimpleModel
 
 log = logging.getLogger(__name__)
 

@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, Iterable, Type, TypeVar
 
 T = TypeVar("T")
