@@ -1,6 +1,6 @@
-from collections.abc import Collection
 from dataclasses import dataclass, field
 import textwrap
+from typing import ClassVar
 
 import numpy as np
 import torch
@@ -15,6 +15,9 @@ from mol_gnn.types import Mol
 
 @dataclass(repr=False)
 class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
+    _in_key_: ClassVar[str] = "mol"
+    _out_key_: ClassVar[str] = "G"
+
     atom_transform: AtomTransform = field(default_factory=MultiTypeAtomTransform)
     bond_transform: BondTransform = field(default_factory=MultiTypeBondTransform)
 
@@ -39,8 +42,7 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
 
         return Graph(V, E, edge_index, rev_index)
 
-    def collate(self, inputs: Collection[Graph]) -> BatchedGraph:
-        return BatchedGraph.from_graphs(inputs)
+    collate = BatchedGraph.from_graphs
 
     def __repr__(self) -> str:
         text = "\n".join(

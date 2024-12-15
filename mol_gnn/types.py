@@ -1,15 +1,25 @@
 # ruff: noqa: F401
-from typing import Callable, Literal, NamedTuple, Required, TypedDict
+from collections.abc import Collection
+from typing import Callable, Literal, NamedTuple, Protocol, Required, TypedDict
 
 from rdkit.Chem import Atom, Bond, Mol
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 
+from mol_gnn.databases.base import Database
+from mol_gnn.transforms.base import Transform
+
 type Rxn = tuple[Mol, Mol]
 
 
 class TransformConfig(TypedDict):
-    transform: Callable
+    transform: Transform
+    in_key: str
+    out_key: str
+
+
+class DatabaseConfig(TypedDict):
+    db: Database
     in_key: str
     out_key: str
 

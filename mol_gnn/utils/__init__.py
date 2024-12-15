@@ -1,4 +1,3 @@
-from .hparams import HasHParams, HParamsDict
 from .mixins import ReprMixin
-from .registry import ClassRegistry, Factory
+from .registry import ClassRegistry
 from .utils import *

@@ -1,10 +1,7 @@
 from collections.abc import Collection, Mapping
 from copy import copy
-from dataclasses import dataclass, field
 import textwrap
-from typing import Protocol
 
-# from jaxtyping import Array, Float
 import pandas as pd
 from rich.pretty import pretty_repr
 import torch
@@ -12,63 +9,54 @@ from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
-from mol_gnn.transforms.managed import ManagedTransform
-from mol_gnn.types import TransformConfig
-# from mol_gnn.transforms.base import JoinColumns
+from mol_gnn.data.managers import DatabaseManager, TransformManager
+from mol_gnn.types import DatabaseConfig, TransformConfig
 
 
-class Database[KT: (int, str), VT](Protocol):
-    in_key: str | None
-    out_key: str
-
-    def __getitem__(self, key: KT) -> VT: ...
-    def __len__(self) -> int: ...
-
-
-@dataclass
 class NotorchDataset(Dataset[dict]):
-    records: list[dict] = field(init=False)
-    targets: Mapping[str, torch.Tensor] = field(init=False)
+    # records: list[dict] = field(init=False)
+    # targets: Mapping[str, torch.Tensor] = field(init=False)
 
     def __init__(
         self,
         df: pd.DataFrame,
-        transforms: Mapping[str, TransformConfig],
-        databases: Mapping[str, Database],
+        databases: Mapping[str, DatabaseConfig],
         target_groups: Mapping[str, list[str]],
+        transforms: Mapping[str, TransformConfig],
     ):
-        self.transforms = {name: ManagedTransform(**kwargs) for name, kwargs in transforms.items()}
-        self.databases = databases
+        self.df = df
+        self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
         self.target_groups = target_groups
+        self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
 
-    #     transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
-    #     self.records = self.df[transform_columns].to_dict("records")
-    #     self.targets = {
-    #         name: torch.as_tensor(self.df[columns].values)
-    #         for name, columns in self.target_groups.items()
-    #     }
+        transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
+        db_columns = list(set(db.in_key for db in self.databases.values()))
+        columns = transform_columns + db_columns
+        self.records = self.df[columns].to_dict("records")
+        self.targets = {
+            name: torch.as_tensor(self.df[columns].values)
+            for name, columns in self.target_groups.items()
+        }
 
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
+
+        for name, db in self.databases.items():
+            sample = db.update(sample)
         for transform in self.transforms.values():
-            sample = transform(sample)
+            sample = transform.update(sample)
         for name, group in self.targets.items():
             sample[name] = group[idx]
-        for name, db in self.databases.items():
-            db_key = sample[db.in_key]
-            sample[db.out_key] = db[db_key]
+
         return sample
-        # dicts = [transform(record) for transform in self.transforms.values()]
-        # out = reduce(lambda a, b: a | b, dicts, record)
-        # extra_transform_data = {k: v for k, v in self.extra_transforms.items()}
-        # extra_data = {key: value[idx] for key, value in self.extra_data.items()}
-        # return sample_data | extra_data | extra_transform_data
 
     def collate(self, samples: Collection[dict]) -> TensorDict:
         batch = TensorDict({}, batch_size=len(samples))
 
         for transform in self.transforms.values():
             batch[f"{INPUT_KEY_PREFIX}.{transform.out_key}"] = transform.collate(samples)
+        for db in self.databases.values():
+            batch[f"{INPUT_KEY_PREFIX}.{db.out_key}"] = db.collate(samples)
         for name in self.target_groups:
             batch[f"{TARGET_KEY_PREFIX}.{name}"] = torch.as_tensor(
                 [sample[name] for sample in samples]
@@ -78,6 +66,15 @@ class NotorchDataset(Dataset[dict]):
 
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
+
+    # def __enter__(self) -> Self:
+    #     self.stack = ExitStack()
+    #     [self.stack.enter_context(db) for db in self.databases.values()]
+
+    #     return self
+
+    # def __exit__(self, *exc):
+    #     self.stack = self.stack.close()
 
     def __repr__(self) -> str:
         prettify = lambda obj: pretty_repr(obj, indent_size=2)  # noqa: E731

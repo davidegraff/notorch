@@ -1,5 +1,6 @@
-from collections.abc import Callable, Collection, Sized
+from collections.abc import Callable, Sized
 from dataclasses import InitVar, dataclass
+from typing import ClassVar
 
 from jaxtyping import Float
 from numpy.typing import NDArray
@@ -9,10 +10,16 @@ from torch import Tensor
 
 from mol_gnn.transforms.base import Transform
 from mol_gnn.types import Mol
+from mol_gnn.utils.mixins import CollateNDArrayMixin
 
 
 @dataclass
-class MolToFP(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
+class MolToFP(
+    CollateNDArrayMixin, Sized, Transform[Mol, Float[NDArray, "d"], Float[Tensor, "n d"]]
+):
+    _in_key_: ClassVar[str] = "mol"
+    _out_key_: ClassVar[str] = "fp"
+
     fpgen: FingeprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
@@ -30,9 +37,6 @@ class MolToFP(Sized, Transform[Mol, Float[Tensor, "d"], Float[Tensor, "n d"]]):
         fp = self.func(input)
 
         return torch.from_numpy(fp).float()
-
-    def collate(self, inputs: Collection[Tensor]) -> Tensor:
-        return torch.stack(inputs)
 
     @classmethod
     def morgan(

@@ -1,5 +1,5 @@
-from collections.abc import Collection
 from dataclasses import dataclass
+from typing import ClassVar
 
 from rdkit import Chem
 
@@ -11,6 +11,9 @@ SANITIZE_OPS = Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_ADJ
 
 @dataclass
 class SmiToMol(Transform[str, Mol, list[Mol]]):
+    _in_key_: ClassVar[str] = "smi"
+    _out_key_: ClassVar[str] = "mol"
+
     keep_h: bool = True
     add_h: bool = False
 
@@ -23,5 +26,4 @@ class SmiToMol(Transform[str, Mol, list[Mol]]):
 
         return Chem.AddHs(mol) if self.add_h else mol
 
-    def collate(self, inputs: Collection[Mol]) -> list[Mol]:
-        return list(inputs)
+    collate = list

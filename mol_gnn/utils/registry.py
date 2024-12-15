@@ -1,4 +1,3 @@
-import inspect
 from typing import Any, Iterable, Type, TypeVar
 
 T = TypeVar("T")
@@ -33,15 +32,3 @@ class ClassRegistry(dict[str, Type[T]]):
         items = [f"{' ' * INDENT}{repr(k)}: {repr(v)}" for k, v in self.items()]
 
         return "\n".join([f"{self.__class__.__name__} {'{'}", ",\n".join(items), "}"])
-
-
-class Factory:
-    @classmethod
-    def build(cls, clz_T: Type[T], *args, **kwargs) -> T:
-        if not inspect.isclass(clz_T):
-            raise TypeError(f"Expected a class type! got: {type(clz_T)}")
-
-        sig = inspect.signature(clz_T)
-        kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters.keys()}
-
-        return clz_T(*args, **kwargs)
