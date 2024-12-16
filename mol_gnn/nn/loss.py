@@ -243,7 +243,7 @@ class MulticlassMCCLoss(LossFunctionBase, MccMixin):
 '''
 
 
-class DirichletLoss(_LossFunctionBase):
+class Dirichlet(_LossFunctionBase):
     """Uses the loss function from [sensoy2018]_ based on the implementation at [sensoyGithub]_
 
     References
@@ -260,30 +260,31 @@ class DirichletLoss(_LossFunctionBase):
 
     def forward(
         self,
-        preds: Float[Tensor, "b t k"],
+        alphas: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
         *,
         mask: Bool[Tensor, "b t"],
         sample_weights: Float[Tensor, "b"],
         **kwargs,
     ) -> Float[Tensor, ""]:
+        alphas = F.softplus(alphas) + 1
         targets = F.one_hot(targets, num_classes=2)
 
-        S = preds.sum(-1, keepdim=True)
-        p = preds / S
-        A = (targets - p).square().sum(-1)
-        B = ((p * (1 - p)) / (S + 1)).sum(-1)
+        S = alphas.sum(-1, keepdim=True)
+        probs = alphas / S
+        A = (targets - probs).square().sum(-1)
+        B = ((probs * (1 - probs)) / (S + 1)).sum(-1)
         L_mse = A + B
 
-        alpha = targets + (1 - targets) * preds
-        beta = torch.ones_like(alpha)
-        S_alpha = alpha.sum(-1)
+        alpha_tilde = targets + (1 - targets) * alphas
+        beta = torch.ones_like(alpha_tilde)
+        S_alpha = alpha_tilde.sum(-1)
         S_beta = beta.sum(-1)
-        ln_alpha = S_alpha.lgamma() - alpha.lgamma().sum(-1)
+        ln_alpha = S_alpha.lgamma() - alpha_tilde.lgamma().sum(-1)
         ln_beta = beta.lgamma().sum(-1) - S_beta.lgamma()
-        dg0 = torch.digamma(alpha)
+        dg0 = torch.digamma(alpha_tilde)
         dg1 = torch.digamma(S_alpha).unsqueeze(-1)
-        L_kl = ln_alpha + ln_beta + ((alpha - beta) * (dg0 - dg1)).sum(-1)
+        L_kl = ln_alpha + ln_beta + ((alpha_tilde - beta) * (dg0 - dg1)).sum(-1)
 
         L = L_mse + self.v_kl * L_kl
 

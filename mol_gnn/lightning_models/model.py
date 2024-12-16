@@ -16,6 +16,7 @@ from mol_gnn.types import LossConfig, LRSchedConfig, ModuleConfig
 
 
 def is_target_key(key: str):
+    """Is the input key :attr:`key` of the form ``targets.*``?"""
     return key.split(".")[0] == TARGET_KEY_PREFIX
 
 
