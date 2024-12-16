@@ -4,13 +4,15 @@ import textwrap
 
 import pandas as pd
 from rich.pretty import pretty_repr
-import torch
-from torch.utils.data import Dataset, DataLoader
 from tensordict import TensorDict
+import torch
+import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
 from mol_gnn.data.managers import DatabaseManager, TransformManager
-from mol_gnn.types import DatabaseConfig, TransformConfig
+from mol_gnn.nn.transforms import build
+from mol_gnn.types import DatabaseConfig, TargetConfig, TransformConfig
 
 
 class NotorchDataset(Dataset[dict]):
@@ -21,21 +23,21 @@ class NotorchDataset(Dataset[dict]):
         self,
         df: pd.DataFrame,
         databases: Mapping[str, DatabaseConfig],
-        target_groups: Mapping[str, list[str]],
         transforms: Mapping[str, TransformConfig],
+        target_groups: Mapping[str, TargetConfig],
     ):
         self.df = df
         self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
-        self.target_groups = target_groups
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
+        self.target_groups = target_groups
 
         transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
         db_columns = list(set(db.in_key for db in self.databases.values()))
         columns = transform_columns + db_columns
         self.records = self.df[columns].to_dict("records")
         self.targets = {
-            name: torch.as_tensor(self.df[columns].values)
-            for name, columns in self.target_groups.items()
+            name: torch.as_tensor(self.df[config["columns"]].values).to(torch.float)
+            for name, config in self.target_groups.items()
         }
 
     def __getitem__(self, idx: int) -> dict:
@@ -45,8 +47,8 @@ class NotorchDataset(Dataset[dict]):
             sample = db.update(sample)
         for transform in self.transforms.values():
             sample = transform.update(sample)
-        for name, group in self.targets.items():
-            sample[name] = group[idx]
+        for name, targets in self.targets.items():
+            sample[name] = targets[idx]
 
         return sample
 
@@ -66,6 +68,12 @@ class NotorchDataset(Dataset[dict]):
 
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
+
+    def build_transforms(self) -> dict[str, nn.Module]:
+        return {
+            name: build(config["task"], self.targets[name])
+            for name, config in self.target_groups.items()
+        }
 
     # def __enter__(self) -> Self:
     #     self.stack = ExitStack()

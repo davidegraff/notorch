@@ -10,6 +10,15 @@ from mol_gnn.databases.base import Database
 from mol_gnn.transforms.base import Transform
 
 type Rxn = tuple[Mol, Mol]
+TaskType = Literal[
+    "regression", "classification", "multiclass", "Evidential", "mve", "evidential", "dirichlet"
+]
+
+
+class DatabaseConfig(TypedDict):
+    db: Database
+    in_key: str
+    out_key: str
 
 
 class TransformConfig(TypedDict):
@@ -18,10 +27,9 @@ class TransformConfig(TypedDict):
     out_key: str
 
 
-class DatabaseConfig(TypedDict):
-    db: Database
-    in_key: str
-    out_key: str
+class TargetConfig(TypedDict):
+    columns: list[str]
+    task: str
 
 
 class ModuleConfig(TypedDict):
