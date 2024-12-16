@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Hashable, Iterable, Mapping, Collection
+from collections.abc import Collection, Hashable, Iterable, Mapping
 from typing import Literal, TypeVar, overload
 
 KT = TypeVar("KT", bound=Hashable)

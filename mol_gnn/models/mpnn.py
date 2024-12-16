@@ -4,9 +4,9 @@ from typing import Iterable
 
 from lightning import pytorch as pl
 import torch
+from torch import Tensor
 import torch.nn as nn
 import torch.optim as optim
-from torch import Tensor
 
 from mol_gnn.data.models.batch import MpnnBatch
 from mol_gnn.data.models.graph import BatchedGraph

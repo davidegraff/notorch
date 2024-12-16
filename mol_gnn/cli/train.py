@@ -5,9 +5,11 @@ import hydra
 # import lightning as L
 from omegaconf import DictConfig
 from rich import print
-# import torch.nn as nn
 
 from mol_gnn.data.dataset import NotorchDataset
+
+# import torch.nn as nn
+
 
 log = logging.getLogger(__name__)
 

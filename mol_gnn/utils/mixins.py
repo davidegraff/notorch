@@ -3,10 +3,10 @@ import inspect
 from typing import Any
 
 from jaxtyping import Num
-from numpy.typing import NDArray
 import numpy as np
-from torch import Tensor
+from numpy.typing import NDArray
 import torch
+from torch import Tensor
 
 
 class CollateNDArrayMixin:
