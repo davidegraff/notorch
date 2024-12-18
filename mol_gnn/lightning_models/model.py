@@ -71,24 +71,24 @@ class SimpleModel(L.LightningModule):
         The overall validation loss is computed as the weighted sum of all loss term values. For
         details on the ``in_keys`` key, see :attr:`modules`.
 
-    transforms : dict[str, tuple[Callable | None, Callable | None]]
-        A mapping from a name to a tuple containing the prediction and target transforms,
-        respectively. These transforms are any callable functions, typically
-        :class:`~torch.nn.Module`s, that have **no learnable parameters**. The prediction transform
-        is applied to the ``"<NAME>.preds"` key at both test- and inference-time while the target
-        transform is applied to the ``"targets.<NAME>"` during training and validation.
+    transforms : dict[str, TargetTransformConfig] | None
+        A mapping from a name to a dictionary of dictionaries defining the configuration for both
+        prediction and target transforms. The outer dictionary contains two keys, ``"preds"`` and
+        ``"targets"``, each mapping to a dictionary with the following keys:
+
+        - ``module``: any ``Callable``, typically a :class:`~torch.nn.Module`, that has **no
+        learnable parameters** that will be applied to the specified key in the tensordict
+        - ``key``: the key in the tensordict whose value will be _modified and ovewritten in place_.
+
+        The ``"preds"`` transforms will be applied to model predictions at inference time via
+        :meth:`SimpleModel.predict_step` and the ``"targets"`` transforms will be applied to the
+        input targets during training and validation.
 
         .. note::
-            The relationship between prediction transforms at test-time and target transforms at
-            train-time is defined entirely by convention. For transformation to work properly,
-            the corresponding prediction module, target group, and transform should all share the
-            _same name_. If for example, your model defines a regression task where the MSE inputs
-            are read from `"mlp.y_hat"` and `"target.y"` and you supply a :attr:`transforms`
-            with the key `"regression"`, the transform will attempt to modify the
-            `"regression.preds"` and `"targets.regression"` keys, respectively. Because these keys
-            are not defined in the forward computation graph, no (inverse) normalization will
-            occur, neither at train- nor at test-time.
-    """
+            In the event that the specified keys are not present in the tensordict, then the
+            transforms will have no effect. As such, you must take care to ensure the keys have been
+            named correctly.
+        """
 
     def __init__(
         self,
@@ -132,22 +132,27 @@ class SimpleModel(L.LightningModule):
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
         transforms_dict = {"preds": [], "targets": []}
-        for name, transform_config in (transforms or dict()).items():
+        for transform_config in (transforms or dict()).values():
             for mode in ["preds", "targets"]:
+                if mode not in transform_config:
+                    continue
                 mod = transform_config[mode]["module"]
                 key = transform_config[mode]["key"]
-                if transform_config[mode]["module"] is not None:
-                    module = TensorDictModule(mod, [key], [key])
-                    transforms_dict[mode].append(module)
+                if transform_config[mode]["module"] is None:
+                    continue
+                if mode == "targets":
+                    key = f"{TARGET_KEY_PREFIX}.{key}"
+                module = TensorDictModule(mod, [key], [key])
+                transforms_dict[mode].append(module)
         transforms_dict = {
             key: TensorDictSequential(*modules, partial_tolerant=True)
             for key, modules in transforms_dict.items()
         }
 
         self.model = TensorDictSequential(*model_modules, selected_out_keys=selected_out_keys)
-        self.transforms = nn.ModuleDict(transforms_dict)
         self.losses = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
+        self.transforms = nn.ModuleDict(transforms_dict)
         self.optim_factory = optim_factory
         self.lr_sched_factory = lr_sched_factory
 

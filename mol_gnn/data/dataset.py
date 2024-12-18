@@ -71,7 +71,7 @@ class NotorchDataset(Dataset[dict]):
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
 
-    def build_task_transform_config(self) -> dict[str, TaskTransformConfig]:
+    def build_task_transform_configs(self) -> dict[str, TaskTransformConfig]:
         """Build a mapping from target group name to its respective :class:`TaskTransformConfig`."""
         return {
             name: build_task_transforms(config.get("task"), self.targets[name])
