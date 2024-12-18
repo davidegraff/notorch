@@ -8,14 +8,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from mol_gnn.exceptions import InvalidChoiceError
-from mol_gnn.types import TaskType
+from mol_gnn.types import TaskTransformConfig, TaskType
 
 
-class _AffineTransform(nn.Module):
-    loc: Float[Tensor, "d"]
-    scale: Float[Tensor, "d"]
+class _AffineBase(nn.Module):
+    loc: Float[Tensor, "t"]
+    scale: Float[Tensor, "t"]
 
-    def __init__(self, loc: Float[ArrayLike, "*d"], scale: Float[ArrayLike, "*d"]) -> None:
+    def __init__(self, loc: Float[ArrayLike, "t"], scale: Float[ArrayLike, "t"]) -> None:
         super().__init__()
 
         self.register_buffer("loc", torch.as_tensor(loc))
@@ -25,17 +25,17 @@ class _AffineTransform(nn.Module):
         return f"loc={self.loc}, scale={self.scale}"
 
 
-class Normalize(_AffineTransform):
-    def forward(self, input: Float[Tensor, "b d"]) -> Float[Tensor, "b d"]:
+class Normalize(_AffineBase):
+    def forward(self, input: Float[Tensor, "b t"]) -> Float[Tensor, "b t"]:
         return (input - self.loc) / self.scale
 
 
-class InverseNormalize(_AffineTransform):
-    def forward(self, input: Float[Tensor, "b d"]) -> Float[Tensor, "b d"]:
+class InverseNormalize(_AffineBase):
+    def forward(self, input: Float[Tensor, "b t"]) -> Float[Tensor, "b t"]:
         return input * self.scale + self.loc
 
 
-class MVE(_AffineTransform):
+class MVE(_AffineBase):
     def forward(self, input: Float[Tensor, "b t 2"]) -> Float[Tensor, "b t 2"]:
         mean, var = input.unbind(-1)
 
@@ -45,7 +45,7 @@ class MVE(_AffineTransform):
         return torch.stack([mean, var], -1)
 
 
-class Evidential(_AffineTransform):
+class Evidential(_AffineBase):
     def forward(self, input: Float[Tensor, "b t 4"]) -> Float[Tensor, "b t 4"]:
         mean, var, alpha, beta = input.unbind(-1)
 
@@ -68,41 +68,55 @@ class Dirichlet(nn.Module):
         return torch.cat([alpha / S, k / S], dim=-1)
 
 
-class TransformManager(nn.Module):
-    def __init__(self, transform: Callable[..., Any]):
+class TrainTransform(nn.Module):
+    def __init__(self, module: Callable[..., Any]):
         super().__init__()
 
-        self.transform = transform
+        self.module = module
 
     def forward(self, input):
-        return input if self.training else self.transform(input)
+        return self.module(input) if self.training else input
+
+
+class EvalTransform(nn.Module):
+    def __init__(self, module: Callable[..., Any]):
+        super().__init__()
+
+        self.module = module
+
+    def forward(self, input):
+        return self.module(input) if not self.training else input
 
 
 def build(
-    task: TaskType, targets: Float[Tensor, "n t"]
-) -> tuple[nn.Module | None, nn.Module | None]:
-    match task:
-        case "regression" | "mve" | "evidential":
-            loc = targets.mean(0)
-            scale = targets.std(0)
-            match task:
-                case "regression":
-                    model_transform = InverseNormalize(loc, scale)
-                case "mve":
-                    model_transform = MVE(loc, scale)
-                case "evidential":
-                    model_transform = Evidential(loc, scale)
-            target_transform = Normalize(loc, scale)
-        case "dirichlet":
-            model_transform = Dirichlet()
-            target_transform = None
-        case "classification":
-            model_transform = nn.Sigmoid()
-            target_transform = None
-        case "multiclass":
-            model_transform = nn.Softmax(-1)
-            target_transform = None
-        case _:
-            raise InvalidChoiceError(task, get_args(TaskType))
+    task: TaskType | None, targets: Float[Tensor, "n t"]
+) -> TaskTransformConfig:
+    if task is None:
+        preds_transform = None
+        target_transform = None
+    elif task in ["regression", "mve", "evidential"]:
+        loc = targets.mean(0)
+        scale = targets.std(0)
+        match task:
+            case "regression":
+                preds_transform = InverseNormalize(loc, scale)
+            case "mve":
+                preds_transform = MVE(loc, scale)
+            case "evidential":
+                preds_transform = Evidential(loc, scale)
+        target_transform = Normalize(loc, scale)
+    else:
+        match task:
+            case "classification":
+                preds_transform = nn.Sigmoid()
+                target_transform = None
+            case "multiclass":
+                preds_transform = nn.Softmax(-1)
+                target_transform = None
+            case "dirichlet":
+                preds_transform = Dirichlet()
+                target_transform = None
+            case _:
+                raise InvalidChoiceError(task, get_args(TaskType))
 
-    return (model_transform, target_transform)
+    return {"preds": preds_transform, "targets": target_transform}

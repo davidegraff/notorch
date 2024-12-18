@@ -6,13 +6,12 @@ import pandas as pd
 from rich.pretty import pretty_repr
 from tensordict import TensorDict
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 
 from mol_gnn.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
 from mol_gnn.data.managers import DatabaseManager, TransformManager
-from mol_gnn.nn.transforms import build
-from mol_gnn.types import DatabaseConfig, TargetConfig, TransformConfig
+from mol_gnn.nn.transforms import build as build_task_transforms
+from mol_gnn.types import DatabaseConfig, TargetConfig, TaskTransformConfig
 
 
 class NotorchDataset(Dataset[dict]):
@@ -22,19 +21,22 @@ class NotorchDataset(Dataset[dict]):
     def __init__(
         self,
         df: pd.DataFrame,
-        databases: Mapping[str, DatabaseConfig],
-        transforms: Mapping[str, TransformConfig],
+        transforms: Mapping[str, TaskTransformConfig],
         target_groups: Mapping[str, TargetConfig],
+        databases: Mapping[str, DatabaseConfig] | None = None,
     ):
+        if databases is not None:
+            databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
+
         self.df = df
-        self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
         self.target_groups = target_groups
+        self.databases = databases
 
-        transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
-        db_columns = list(set(db.in_key for db in self.databases.values()))
-        columns = transform_columns + db_columns
-        self.records = self.df[columns].to_dict("records")
+        # transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
+        # db_columns = list(set(db.in_key for db in self.databases.values()))
+        # columns = transform_columns + db_columns
+        # self.records = self.df[columns].to_dict("records")
         self.targets = {
             name: torch.as_tensor(self.df[config["columns"]].values).to(torch.float)
             for name, config in self.target_groups.items()
@@ -69,9 +71,10 @@ class NotorchDataset(Dataset[dict]):
     def to_dataloader(self, **kwargs) -> DataLoader:
         return DataLoader(self, collate_fn=self.collate, **kwargs)
 
-    def build_transforms(self) -> dict[str, nn.Module]:
+    def build_task_transform_config(self) -> dict[str, TaskTransformConfig]:
+        """Build a mapping from target group name to its respective :class:`TaskTransformConfig`."""
         return {
-            name: build(config["task"], self.targets[name])
+            name: build_task_transforms(config.get("task"), self.targets[name])
             for name, config in self.target_groups.items()
         }
 
