@@ -6,8 +6,8 @@ from typing import Protocol
 
 from jaxtyping import Int
 from rdkit.Chem.rdchem import BondStereo, BondType
-from torch import Tensor
 import torch
+from torch import Tensor
 import torch.nn.functional as F
 
 from mol_gnn.conf import REPR_INDENT

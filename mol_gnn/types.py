@@ -7,21 +7,35 @@ from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 
 from mol_gnn.databases.base import Database
-from mol_gnn.transforms.base import Transform
 
 type Rxn = tuple[Mol, Mol]
-
-
-class TransformConfig(TypedDict):
-    transform: Transform
-    in_key: str
-    out_key: str
+TaskType = Literal["regression", "classification", "multiclass", "mve", "evidential", "dirichlet"]
 
 
 class DatabaseConfig(TypedDict):
     db: Database
     in_key: str
     out_key: str
+
+
+class TaskTransformConfig(TypedDict):
+    preds: Callable | None
+    targets: Callable | None
+
+
+class TransformConfig(TypedDict):
+    module: Callable | None
+    key: str
+
+
+class TargetTransformConfig(TypedDict):
+    preds: TransformConfig
+    targets: TransformConfig
+
+
+class TargetConfig(TypedDict, total=False):
+    columns: Required[Collection[str]]
+    task: str
 
 
 class ModuleConfig(TypedDict):

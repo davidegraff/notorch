@@ -34,3 +34,8 @@ class ClosedDatabaseError(ValueError):
         )
 
         super().__init__(message)
+
+
+class InvalidChoiceError(ValueError):
+    def __init__(self, choice: str, choices: tuple[str, ...]):
+        super().__init__(f"invalid choice: '{choice}'! Expected one of: {choices}")
