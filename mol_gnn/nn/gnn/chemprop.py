@@ -66,10 +66,13 @@ class ChempropBlock(nn.Module):
 
         if residual:
             # residual connection on edge features
+            def add_edge_attrs(G1, G2):
+                G = copy(G1)
+                G.E = G1.E + G2.E
+
+                return G
             layers = [
-                Residual(
-                    layer, lambda g1, g2: Graph(g1.V, g1.E + g2.E, g1.edge_index, g1.rev_index)
-                )
+                Residual(layer, add_edge_attrs)
                 for layer in layers
             ]
 
@@ -80,10 +83,8 @@ class ChempropBlock(nn.Module):
 
     def forward(self, G: Graph) -> Graph:
         G_t = copy(G)
-        G_t.E = self.embed["node"](G.V) + self.embed["edge"](G.E)
+        G_t.E = G.V[G.edge_index[0]] + G.E
         G_t = self.block(G_t)
-        G_t.V = scatter(
-            G_t.E, G_t.edge_index[0], dim=0, dim_size=G.num_nodes, rev_index=G.rev_index
-        )
+        G_t.V = scatter(G_t.E, G_t.edge_index[0], dim=0, dim_size=G.num_nodes, reduce=self.reduce)
 
         return G_t

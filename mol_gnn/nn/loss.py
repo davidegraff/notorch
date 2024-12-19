@@ -9,12 +9,15 @@ import torch.nn.functional as F
 
 
 class _LossFunctionBase(nn.Module):
-    task_weights: Float[Tensor, "1 #t"]
+    task_weights: Float[Tensor, "1 #t"] | None
 
-    def __init__(self, task_weights: Float[ArrayLike, "*t"] = 1.0) -> None:
+    def __init__(self, task_weights: Float[ArrayLike, "*t"] | None = None) -> None:
         super().__init__()
 
-        self.register_buffer("task_weights", torch.atleast_2d(torch.as_tensor(task_weights)))
+        if task_weights is not None:
+            task_weights = torch.atleast_2d(torch.as_tensor(task_weights))
+
+        self.register_buffer("task_weights", task_weights)
 
     @abstractmethod
     def forward(
@@ -30,13 +33,20 @@ class _LossFunctionBase(nn.Module):
     def _reduce(
         self,
         loss: Float[Tensor, "b t"],
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] | None = None,
+        sample_weights: Float[Tensor, "b"] | None = None,
     ) -> Float[Tensor, ""]:
-        loss = loss * self.task_weights * sample_weights.unsqueeze(0)
+        match self.task_weights, sample_weights:
+            case None, None:
+                pass
+            case _, None:
+                loss = loss * sample_weights.unsqueeze(0)
+            case _, None:
+                loss = loss * self.task_weights
+            case _, _:
+                loss = loss * self.task_weights * sample_weights.unsqueeze(0)
 
-        return (loss * mask).sum() / mask.sum()
-
+        return loss.mean() if mask is None else (loss * mask).sum() / mask.sum()
 
 class _BoundedMixin:
     def forward(
@@ -61,8 +71,8 @@ class MSE(_LossFunctionBase):
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] | None = None,
+        sample_weights: Float[Tensor, "b"] | None = None,
     ) -> Float[Tensor, ""]:
         L = F.mse_loss(preds, targets, reduction="none")
 
