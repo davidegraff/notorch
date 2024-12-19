@@ -15,9 +15,6 @@ from mol_gnn.types import DatabaseConfig, TargetConfig, TaskTransformConfig
 
 
 class NotorchDataset(Dataset[dict]):
-    # records: list[dict] = field(init=False)
-    # targets: Mapping[str, torch.Tensor] = field(init=False)
-
     def __init__(
         self,
         df: pd.DataFrame,
@@ -25,8 +22,9 @@ class NotorchDataset(Dataset[dict]):
         target_groups: Mapping[str, TargetConfig],
         databases: Mapping[str, DatabaseConfig] | None = None,
     ):
-        if databases is not None:
-            databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
+        databases = {
+            name: DatabaseManager(**kwargs) for name, kwargs in (databases or dict()).items()
+        }
 
         self.df = df
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
@@ -36,11 +34,14 @@ class NotorchDataset(Dataset[dict]):
         # transform_columns = list(set(transform.in_key for transform in self.transforms.values()))
         # db_columns = list(set(db.in_key for db in self.databases.values()))
         # columns = transform_columns + db_columns
-        # self.records = self.df[columns].to_dict("records")
+        self.records = self.df.to_dict("records")
         self.targets = {
             name: torch.as_tensor(self.df[config["columns"]].values).to(torch.float)
             for name, config in self.target_groups.items()
         }
+
+    def __len__(self) -> int:
+        return len(self.records)
 
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
@@ -88,7 +89,8 @@ class NotorchDataset(Dataset[dict]):
     #     self.stack = self.stack.close()
 
     def __repr__(self) -> str:
-        prettify = lambda obj: pretty_repr(obj, indent_size=2)  # noqa: E731
+        prettify = lambda obj: pretty_repr(obj, indent_size=2, max_length=4)  # noqa: E731
+        df_repr = f"(records): {prettify(self.records)}"
         transform_repr = "\n".join(
             [
                 "(transforms): {",
@@ -117,6 +119,7 @@ class NotorchDataset(Dataset[dict]):
         return "\n".join(
             [
                 f"{type(self).__name__}(",
+                textwrap.indent(df_repr, REPR_INDENT),
                 textwrap.indent(transform_repr, REPR_INDENT),
                 textwrap.indent(databases_repr, REPR_INDENT),
                 textwrap.indent(target_groups_repr, REPR_INDENT),
