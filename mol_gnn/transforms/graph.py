@@ -31,7 +31,7 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
 
     def __call__(self, mol: Mol) -> Graph:
         V = self.atom_transform(mol.GetAtoms())
-        E = self.bond_transform(mol.GetBonds())
+        E = self.bond_transform(mol.GetBonds()).repeat_interleave(2, dim=0)
 
         edge_index = [
             [(u := bond.GetBeginAtomIdx(), v := bond.GetEndAtomIdx()), (v, u)]
