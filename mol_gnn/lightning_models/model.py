@@ -115,7 +115,7 @@ class NotorchModel(L.LightningModule):
         loss_modules = []
         for name, loss_config in losses.items():
             module = TensorDictModule(
-                loss_config["module"], loss_config["in_keys"], [f"loss.{name}"]
+                loss_config["module"], loss_config["in_keys"], [f"loss.{name}"], inplace=False
             )
             module._weight = loss_config["weight"]
             loss_modules.append(module)
@@ -123,7 +123,7 @@ class NotorchModel(L.LightningModule):
         metric_modules = []
         for name, metric_config in metrics.items():
             module = TensorDictModule(
-                metric_config["module"], metric_config["in_keys"], [f"metric.{name}"]
+                metric_config["module"], metric_config["in_keys"], [f"metric.{name}"], inplace=False
             )
             module._weight = metric_config["weight"]
             metric_modules.append(module)
@@ -149,6 +149,7 @@ class NotorchModel(L.LightningModule):
             for key, modules in transforms_dict.items()
         }
 
+        print(selected_out_keys)
         self.model = TensorDictSequential(*model_modules, selected_out_keys=selected_out_keys)
         self.losses = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
@@ -160,16 +161,16 @@ class NotorchModel(L.LightningModule):
         return self.model(batch)
 
     def training_step(self, batch: TensorDict, batch_idx: int):
+        # import pdb; pdb.set_trace()
         batch = self(batch)
         batch = self.transforms["targets"](batch)
 
         loss_dict = {}
         loss = 0
         for loss_function in self.losses:
-            batch = loss_function(batch)
             out_key = loss_function.out_keys[0]
-            _, name = out_key
-            value = batch[out_key]
+            _, name = out_key.split('.')
+            value = loss_function(batch)[out_key]
 
             loss_dict[f"train/{name}"] = value
             loss += loss_function._weight * value
