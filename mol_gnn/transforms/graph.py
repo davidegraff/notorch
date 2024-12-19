@@ -22,11 +22,11 @@ class MolToGraph(Transform[Mol, Graph, BatchedGraph]):
     bond_transform: BondTransform = field(default_factory=MultiTypeBondTransform)
 
     @property
-    def node_dim(self) -> int:
+    def num_node_types(self) -> int:
         return len(self.atom_transform)
 
     @property
-    def edge_dim(self) -> int:
+    def num_edge_types(self) -> int:
         return len(self.bond_transform)
 
     def __call__(self, mol: Mol) -> Graph:

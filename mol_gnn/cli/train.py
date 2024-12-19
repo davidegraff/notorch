@@ -1,51 +1,70 @@
+from functools import partial
 import logging
+from typing import Callable
 
 import hydra
 
-import numpy as np
+import lightning as L
 from omegaconf import DictConfig
 from rich import print
-import pandas as pd
 
 from mol_gnn.data.dataset import NotorchDataset
-from mol_gnn.types import TargetTransformConfig
+from mol_gnn.lightning_models.model import NotorchModel
+from mol_gnn.types import TargetTransformConfig, TaskTransformConfig
+from mol_gnn.cli.utils.resolvers import register_resolvers
 
+register_resolvers()
 log = logging.getLogger(__name__)
 
 
 def build_transform_config(
-    transform_key_map, target_transforms
+    transform_key_map: dict[str, dict[str, str]],
+    task_transforms: dict[str, TaskTransformConfig],
 ) -> dict[str, TargetTransformConfig]:
     return {
         target_group: {
             mode: {
-                "module": target_transforms[target_group][mode],
+                "module": task_transforms[target_group][mode],
                 "key": transform_key_map[target_group][mode],
             }
             for mode in ["preds", "targets"]
             if mode in transform_key_map[target_group]
         }
-        for target_group in transform_key_map.keys()
+        for target_group in (transform_key_map or dict()).keys()
     }
 
 
 @hydra.main(config_path="configs", config_name="train", version_base=None)
 def train(cfg: DictConfig):
-    X = np.random.randn(5, 128)
-    df = pd.DataFrame(dict(zip("abcde", X)))
+    # print(OmegaConf.to_yaml(cfg))
     # print(hydra.utils.instantiate(cfg.data, _convert_="object"))
     # import pdb; pdb.set_trace()
-    data_cfg = hydra.utils.instantiate(cfg.data, _convert_="object")
-    data_cfg["df"] = df
-    dataset = NotorchDataset(**data_cfg)
+    # data_cfg = hydra.utils.instantiate(cfg.data, _convert_="object")
+    # print(data_cfg)
+    # data_cfg["df"] = df
+    dataset_factory: Callable[..., NotorchDataset] = hydra.utils.instantiate(
+        cfg.data, _convert_="object"
+    )
+    train = dataset_factory(cfg.train_df)
+    val = dataset_factory(cfg.train_df)
 
-    target_transforms = dataset.build_task_transform_configs()
     transform_key_map = hydra.utils.instantiate(cfg.model.transforms)
+    target_transforms = train.build_task_transform_configs()
     transforms = build_transform_config(transform_key_map, target_transforms)
-    model: SimpleModel = hydra.utils.instantiate(
+    model: NotorchModel = hydra.utils.instantiate(
         cfg.model, transforms=transforms, _convert_="object"
     )
+
+    # print(model_kwargs)
     print(model)
+
+    # print(train)
+    # print(len(train))
+    # print(train[4])
+
+    trainer = L.Trainer(accelerator='cpu')
+    train_loader = train.to_dataloader(batch_size=64)
+    trainer.fit(model, train_loader)
 
     # print(dataset)
     # transforms = (hydra.utils.instantiate(cfg.data.transforms, _convert_="object"))

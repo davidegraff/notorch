@@ -149,7 +149,6 @@ class NotorchModel(L.LightningModule):
             for key, modules in transforms_dict.items()
         }
 
-        print(selected_out_keys)
         self.model = TensorDictSequential(*model_modules, selected_out_keys=selected_out_keys)
         self.losses = nn.ModuleList(loss_modules)
         self.metrics = nn.ModuleList(metric_modules)
@@ -161,7 +160,6 @@ class NotorchModel(L.LightningModule):
         return self.model(batch)
 
     def training_step(self, batch: TensorDict, batch_idx: int):
-        # import pdb; pdb.set_trace()
         batch = self(batch)
         batch = self.transforms["targets"](batch)
 

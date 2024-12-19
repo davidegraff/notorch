@@ -15,7 +15,7 @@ class _LossFunctionBase(nn.Module):
         super().__init__()
 
         if task_weights is not None:
-            task_weights = torch.atleast_2d(torch.as_tensor(task_weights))
+            task_weights = torch.atleast_2d(torch.as_tensor(task_weights)).float()
 
         self.register_buffer("task_weights", task_weights)
 
@@ -39,7 +39,7 @@ class _LossFunctionBase(nn.Module):
         match self.task_weights, sample_weights:
             case None, None:
                 pass
-            case _, None:
+            case None, _:
                 loss = loss * sample_weights.unsqueeze(0)
             case _, None:
                 loss = loss * self.task_weights
@@ -47,6 +47,10 @@ class _LossFunctionBase(nn.Module):
                 loss = loss * self.task_weights * sample_weights.unsqueeze(0)
 
         return loss.mean() if mask is None else (loss * mask).sum() / mask.sum()
+
+    def extra_repr(self) -> str:
+        return f"task_weights={self.task_weights}"
+
 
 class _BoundedMixin:
     def forward(

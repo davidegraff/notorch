@@ -31,3 +31,14 @@ BOND_STEREOS = [
     BondStereo.STEREOTRANS,
     BondStereo.STEREOATROPCW,
 ]
+
+DEFAULT_NUM_ATOM_TYPES = (
+    len(ELEMENTS)
+    + len(DEGREES)
+    + len(HYBRIDIZATIONS)
+    + len(CHIRAL_TAGS)
+    + len(NUM_HS)
+    + len(FORMAL_CHARGES)
+    + 8
+)
+DEFAULT_NUM_BOND_TYPES = len(BOND_TYPES) + len(BOND_STEREOS) + 2
