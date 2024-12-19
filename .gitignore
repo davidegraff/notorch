@@ -155,3 +155,4 @@ cython_debug/
 uv.lock
 outputs
 configs
+lightning_logs

@@ -11,19 +11,9 @@ from torch import Tensor
 import torch.nn.functional as F
 
 from mol_gnn.conf import REPR_INDENT
+from mol_gnn.transforms.conf import BOND_STEREOS, BOND_TYPES
 from mol_gnn.transforms.utils.inverse_index import InverseIndexWithUnknown, build
 from mol_gnn.types import Bond
-
-BOND_TYPES = [BondType.SINGLE, BondType.DOUBLE, BondType.TRIPLE, BondType.AROMATIC]
-BOND_STEREOS = [
-    BondStereo.STEREONONE,
-    BondStereo.STEREOANY,
-    BondStereo.STEREOZ,
-    BondStereo.STEREOE,
-    BondStereo.STEREOCIS,
-    BondStereo.STEREOTRANS,
-    BondStereo.STEREOATROPCW,
-]
 
 
 class BondTransform(Protocol):
@@ -98,4 +88,4 @@ class MultiTypeBondTransform:
         return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
 
     def stringify_choices(self):
-        return list(map(str, ))
+        return list(map(str))
