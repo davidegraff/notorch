@@ -31,7 +31,6 @@ class TransformManager(Manager):
     out_key: str = None
 
     def __post_init__(self):
-        self.asset = self.transform
         if self.in_key is None:
             self.in_key = self.transform._in_key_
         if self.out_key is None:
@@ -51,7 +50,7 @@ class TransformManager(Manager):
                 f"Is this input the result of `{type(self).__name__}.update()`?"
             )
 
-        return self.asset.collate(inputs)
+        return self.transform.collate(inputs)
 
 
     def __repr__(self) -> str:

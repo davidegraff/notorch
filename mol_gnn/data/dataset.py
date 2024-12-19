@@ -63,8 +63,8 @@ class NotorchDataset(Dataset[dict]):
         for db in self.databases.values():
             batch[f"{INPUT_KEY_PREFIX}.{db.out_key}"] = db.collate(samples)
         for name in self.target_groups:
-            batch[f"{TARGET_KEY_PREFIX}.{name}"] = torch.as_tensor(
-                [sample[name] for sample in samples]
+            batch[f"{TARGET_KEY_PREFIX}.{name}"] = torch.stack(
+                [sample[name] for sample in samples], dim=0
             )
 
         return batch
