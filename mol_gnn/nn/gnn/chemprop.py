@@ -71,10 +71,8 @@ class ChempropBlock(nn.Module):
                 G.E = G1.E + G2.E
 
                 return G
-            layers = [
-                Residual(layer, add_edge_attrs)
-                for layer in layers
-            ]
+
+            layers = [Residual(layer, add_edge_attrs) for layer in layers]
 
         self.block = nn.Sequential(*layers)
         self.hidden_dim = hidden_dim

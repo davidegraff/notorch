@@ -1,4 +1,3 @@
-from functools import partial
 import logging
 from typing import Callable
 
@@ -18,8 +17,7 @@ log = logging.getLogger(__name__)
 
 
 def build_transform_config(
-    transform_key_map: dict[str, dict[str, str]],
-    task_transforms: dict[str, TaskTransformConfig],
+    transform_key_map: dict[str, dict[str, str]], task_transforms: dict[str, TaskTransformConfig]
 ) -> dict[str, TargetTransformConfig]:
     return {
         target_group: {
@@ -62,7 +60,7 @@ def train(cfg: DictConfig):
     # print(len(train))
     # print(train[4])
 
-    trainer = L.Trainer(accelerator='cpu')
+    trainer = L.Trainer(accelerator="cpu")
     train_loader = train.to_dataloader(batch_size=64)
     trainer.fit(model, train_loader)
 

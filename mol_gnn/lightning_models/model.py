@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 
 import lightning as L
 from tensordict import TensorDict
@@ -88,7 +87,7 @@ class NotorchModel(L.LightningModule):
             In the event that the specified keys are not present in the tensordict, then the
             transforms will have no effect. As such, you must take care to ensure the keys have been
             named correctly.
-        """
+    """
 
     def __init__(
         self,
@@ -167,7 +166,7 @@ class NotorchModel(L.LightningModule):
         loss = 0
         for loss_function in self.losses:
             out_key = loss_function.out_keys[0]
-            _, name = out_key.split('.')
+            _, name = out_key.split(".")
             value = loss_function(batch)[out_key]
 
             loss_dict[f"train/{name}"] = value

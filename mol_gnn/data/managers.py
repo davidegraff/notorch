@@ -52,7 +52,6 @@ class TransformManager(Manager):
 
         return self.transform.collate(inputs)
 
-
     def __repr__(self) -> str:
         text = "\n".join(
             [
@@ -86,7 +85,6 @@ class DatabaseManager(Manager):
             )
 
         return self.database.collate(inputs)
-
 
     def __repr__(self) -> str:
         text = "\n".join(
