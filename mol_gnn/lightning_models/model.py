@@ -20,7 +20,7 @@ def is_target_key(key: str):
     return key.split(".")[0] == TARGET_KEY_PREFIX
 
 
-class SimpleModel(L.LightningModule):
+class NotorchModel(L.LightningModule):
     """A :class:`SimpleModel` is a generic class for composing (mostly) arbitrary models.
 
     The general recipe consists of three configuration dictionaries that define the model, the loss,
