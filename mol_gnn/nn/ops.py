@@ -28,3 +28,16 @@ class Cat(_OpBase):
 
     def forward(self, *tensors: Tensor) -> Tensor:
         return torch.cat(tensors, dim=self.dim)
+
+
+class Einsum(nn.Module):
+    def __init__(self, equation: str):
+        super().__init__()
+
+        self.equation = equation
+
+    def foward(self, *tensors: Tensor) -> Tensor:
+        return torch.einsum(self.equation, *tensors)
+
+    def extra_repr(self) -> str:
+        return f"equation={repr(self.equation)}"
