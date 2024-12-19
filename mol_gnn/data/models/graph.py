@@ -1,10 +1,13 @@
 from dataclasses import InitVar, dataclass, field
+import textwrap
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int
 import torch
 from torch import Tensor
 from torch.types import Device
+
+from mol_gnn.conf import REPR_INDENT
 
 
 @dataclass(repr=False, eq=False)
@@ -143,11 +146,13 @@ class Graph:
         return (node_ids, edge_ids)
 
     def __repr__(self) -> str:
-        INDENT = " " * 4
-        lines = [f"{INDENT}{line}" for line in self._build_field_info()]
-        lines = [f"{self.__class__.__name__}("] + lines + [")"]
+        lines = (
+            [f"{self.__class__.__name__}("]
+            + [textwrap.indent(line, REPR_INDENT) for line in self._build_field_info()]
+            + [")"]
+        )
 
-        return "\n".join([f"{self.__class__.__name__}("] + lines + [")"])
+        return "\n".join(lines)
 
     def _build_field_info(self) -> list[str]:
         return [
