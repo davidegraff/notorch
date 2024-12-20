@@ -1,7 +1,7 @@
-"""Global configuration variables for :package:`mol_gnn`"""
+"""Global configuration variables for :package:`notorch`"""
 
 # ruff: noqa: F401
-# from mol_gnn.transforms.conf import DEFAULT_NUM_ATOM_TYPES, DEFAULT_NUM_BOND_TYPES
+# from notorch.transforms.conf import DEFAULT_NUM_ATOM_TYPES, DEFAULT_NUM_BOND_TYPES
 
 INPUT_KEY_PREFIX = "inputs"
 TARGET_KEY_PREFIX = "targets"

@@ -1,4 +1,4 @@
 import runpy
 
 print("hell world!")
-runpy.run_module("mol_gnn.cli", run_name="__main__")
+runpy.run_module("notorch.cli", run_name="__main__")
