@@ -11,10 +11,10 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import DataLoader
 
-from mol_gnn import lightning_models, nn
-from mol_gnn.nn.gnn import agg
-from mol_gnn.nn.message_passing import edge, embed, message, update
-from mol_gnn.data import MoleculeDataset
+from notorch import lightning_models, nn
+from notorch.nn.gnn import agg
+from notorch.nn.message_passing import edge, embed, message, update
+from notorch.data import MoleculeDataset
 
 warnings.filterwarnings("ignore", module=r"lightning.*", append=True)
 

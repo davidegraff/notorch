@@ -11,9 +11,9 @@ import pytest
 import torch
 from torch.utils.data import DataLoader
 
-from mol_gnn import featurizers, lightning_models, nn
-from mol_gnn.data import ReactionDatapoint, ReactionDataset, collate_batch
-from mol_gnn.featurizers import CondensedReactionGraphFeaturizer
+from notorch import featurizers, lightning_models, nn
+from notorch.data import ReactionDatapoint, ReactionDataset, collate_batch
+from notorch.featurizers import CondensedReactionGraphFeaturizer
 
 # warnings.simplefilter("ignore", category=UserWarning, append=True)
 warnings.filterwarnings("ignore", module=r"lightning.*", append=True)

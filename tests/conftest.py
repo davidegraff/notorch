@@ -5,7 +5,7 @@ from rdkit import Chem
 import pandas as pd
 import pytest
 
-from mol_gnn.data.molecule import MoleculeDatapoint
+from notorch.data.molecule import MoleculeDatapoint
 
 TEST_DIR = Path(__file__).parent
 DATA_DIR = TEST_DIR / "data"
