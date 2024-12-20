@@ -1,5 +1,5 @@
-from torch import Tensor
 import torch
+from torch import Tensor
 import torch.nn as nn
 
 
@@ -30,6 +30,7 @@ class Cat(_OpBase):
     dim : int, default=-1
         the dimension along which to concatenate
     """
+
     def __init__(self, dim: int = -1):
         super().__init__(dim)
 
@@ -45,6 +46,7 @@ class MatMul(nn.Module):
     transpose : bool, default False
         whether to transpose the last two dimensions of :attr:`B`
     """
+
     def __init__(self, transpose: bool = False) -> None:
         super().__init__()
 

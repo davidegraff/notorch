@@ -6,10 +6,10 @@ import lightning as L
 from omegaconf import DictConfig
 from rich import print
 
+from notorch.cli.utils.resolvers import register_resolvers
 from notorch.data.dataset import NotorchDataset
 from notorch.lightning_models.model import NotorchModel
 from notorch.types import TargetTransformConfig, TaskTransformConfig
-from notorch.cli.utils.resolvers import register_resolvers
 
 register_resolvers()
 log = logging.getLogger(__name__)
