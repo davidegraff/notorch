@@ -2,7 +2,6 @@ import logging
 from typing import Callable
 
 import hydra
-
 import lightning as L
 from omegaconf import DictConfig
 from rich import print
