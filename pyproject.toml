@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mol_gnn"
-description = "Molecular GNN toolkit"
+name = "notorch"
+description = "no-code software for training (mostly) arbitrary neural networks"
 version = "0.0.1"
 authors = [
     {name = "David Graff"},
@@ -97,7 +97,7 @@ exclude = ["**/_old/*.py", "**/_*.py"]
 skip-magic-trailing-comma = true
 
 [tool.pytest.ini_options]
-addopts = "--cov mol_gnn"
+addopts = "--cov notorch"
 markers = [
     "long: marks tests as long (deselect with '-m \"not long\"')",
 ]

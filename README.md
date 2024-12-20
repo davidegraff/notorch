@@ -1,4 +1,4 @@
-# MolGNN
+# NoTorch
 gnn implementations for molecules
 
-based on work originally done in [chemprop]()
+based on work originally done in `chemprop`
