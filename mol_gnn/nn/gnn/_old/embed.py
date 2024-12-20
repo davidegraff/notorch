@@ -5,7 +5,7 @@ from abc import abstractmethod
 import torch
 import torch.nn as nn
 
-from mol_gnn.conf import DEFAULT_ATOM_DIM, DEFAULT_BOND_DIM, DEFAULT_HIDDEN_DIM
+from mol_gnn.conf import DEFAULT_NUM_ATOM_TYPES, DEFAULT_NUM_BOND_TYPES, DEFAULT_HIDDEN_DIM
 from mol_gnn.utils.registry import ClassRegistry
 
 
@@ -20,11 +20,11 @@ class InputEmbedding(nn.Module):
 
     @classmethod
     def node(cls, bias: bool = True) -> InputEmbedding:
-        return cls(DEFAULT_ATOM_DIM, DEFAULT_HIDDEN_DIM, bias)
+        return cls(DEFAULT_NUM_ATOM_TYPES, DEFAULT_HIDDEN_DIM, bias)
 
     @classmethod
     def edge(cls, bias: bool = True) -> InputEmbedding:
-        return cls(DEFAULT_ATOM_DIM + DEFAULT_BOND_DIM, DEFAULT_HIDDEN_DIM, bias)
+        return cls(DEFAULT_NUM_ATOM_TYPES + DEFAULT_NUM_BOND_TYPES, DEFAULT_HIDDEN_DIM, bias)
 
 
 class OutputEmbedding(nn.Module):
@@ -33,8 +33,8 @@ class OutputEmbedding(nn.Module):
     @abstractmethod
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
+        atom_dim: int = DEFAULT_NUM_ATOM_TYPES,
+        bond_dim: int = DEFAULT_NUM_BOND_TYPES,
         message_dim: int = DEFAULT_HIDDEN_DIM,
         *,
         bias: bool = False,
@@ -55,8 +55,8 @@ OutputEmbeddingRegistry = ClassRegistry[OutputEmbedding]()
 class LinearOutputEmbedding(nn.Module):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
+        atom_dim: int = DEFAULT_NUM_ATOM_TYPES,
+        bond_dim: int = DEFAULT_NUM_BOND_TYPES,
         message_dim: int = DEFAULT_HIDDEN_DIM,
         *,
         bias: bool = False,
@@ -82,8 +82,8 @@ class LinearOutputEmbedding(nn.Module):
 class AtomDescriptorEmbedding(LinearOutputEmbedding):
     def __init__(
         self,
-        atom_dim: int = DEFAULT_ATOM_DIM,
-        bond_dim: int = DEFAULT_BOND_DIM,
+        atom_dim: int = DEFAULT_NUM_ATOM_TYPES,
+        bond_dim: int = DEFAULT_NUM_BOND_TYPES,
         message_dim: int = DEFAULT_HIDDEN_DIM,
         desc_dim: int = 0,
         *,
