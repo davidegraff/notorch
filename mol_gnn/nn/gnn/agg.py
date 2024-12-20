@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from math import sqrt
 from typing import Annotated
 
@@ -9,13 +10,16 @@ from torch_scatter import scatter_max, scatter_mean, scatter_softmax, scatter_su
 
 from mol_gnn.conf import DEFAULT_HIDDEN_DIM
 from mol_gnn.data.models.graph import BatchedGraph
-from mol_gnn.nn.gnn.base import Aggregation
-from mol_gnn.utils.registry import ClassRegistry
-
-AggregationRegistry = ClassRegistry[Aggregation]()
 
 
-@AggregationRegistry.register("sum")
+class Aggregation(nn.Module):
+    @abstractmethod
+    def forward(
+        self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
+    ) -> Float[Tensor, "b d_v"]:
+        pass
+
+
 class Sum(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
@@ -25,7 +29,6 @@ class Sum(Aggregation):
         return H
 
 
-@AggregationRegistry.register("mean")
 class Mean(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
@@ -35,7 +38,6 @@ class Mean(Aggregation):
         return H
 
 
-@AggregationRegistry.register("max")
 class Max(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
@@ -45,7 +47,6 @@ class Max(Aggregation):
         return H
 
 
-@AggregationRegistry.register("gated")
 class Gated(Aggregation):
     def __init__(self, input_dim: int = DEFAULT_HIDDEN_DIM):
         super().__init__()
@@ -62,7 +63,6 @@ class Gated(Aggregation):
         return H
 
 
-@AggregationRegistry.register("sdp")
 class SDPAttention(Aggregation):
     def __init__(self, key_dim: int = DEFAULT_HIDDEN_DIM):
         super().__init__()
