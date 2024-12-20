@@ -54,6 +54,7 @@ class InverseIndexWithUnknown[KT](InverseIndex[KT]):
     def __repr__(self):
         return super().__repr__() + " + <UNK>"
 
+
 @overload
 def build(choices: None, unknown_pad: bool) -> None: ...
 

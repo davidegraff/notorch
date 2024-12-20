@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
 
 import lightning as L
 from tensordict import TensorDict
@@ -20,7 +19,7 @@ def is_target_key(key: str):
     return key.split(".")[0] == TARGET_KEY_PREFIX
 
 
-class SimpleModel(L.LightningModule):
+class NotorchModel(L.LightningModule):
     """A :class:`SimpleModel` is a generic class for composing (mostly) arbitrary models.
 
     The general recipe consists of three configuration dictionaries that define the model, the loss,
@@ -88,7 +87,7 @@ class SimpleModel(L.LightningModule):
             In the event that the specified keys are not present in the tensordict, then the
             transforms will have no effect. As such, you must take care to ensure the keys have been
             named correctly.
-        """
+    """
 
     def __init__(
         self,
@@ -115,7 +114,7 @@ class SimpleModel(L.LightningModule):
         loss_modules = []
         for name, loss_config in losses.items():
             module = TensorDictModule(
-                loss_config["module"], loss_config["in_keys"], [f"loss.{name}"]
+                loss_config["module"], loss_config["in_keys"], [f"loss.{name}"], inplace=False
             )
             module._weight = loss_config["weight"]
             loss_modules.append(module)
@@ -123,7 +122,7 @@ class SimpleModel(L.LightningModule):
         metric_modules = []
         for name, metric_config in metrics.items():
             module = TensorDictModule(
-                metric_config["module"], metric_config["in_keys"], [f"metric.{name}"]
+                metric_config["module"], metric_config["in_keys"], [f"metric.{name}"], inplace=False
             )
             module._weight = metric_config["weight"]
             metric_modules.append(module)
@@ -166,10 +165,9 @@ class SimpleModel(L.LightningModule):
         loss_dict = {}
         loss = 0
         for loss_function in self.losses:
-            batch = loss_function(batch)
             out_key = loss_function.out_keys[0]
-            _, name = out_key
-            value = batch[out_key]
+            _, name = out_key.split(".")
+            value = loss_function(batch)[out_key]
 
             loss_dict[f"train/{name}"] = value
             loss += loss_function._weight * value

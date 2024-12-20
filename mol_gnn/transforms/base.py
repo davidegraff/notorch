@@ -11,6 +11,7 @@ class Transform[S, T, T_batched](Protocol):
     A :class:`Transform` transforms an input of type ``S`` to an output of type ``T`` and knows how
     to collate the respective outputs into a batched form of type ``T_batched``.
     """
+
     _in_key_: ClassVar[str]
     _out_key_: ClassVar[str]
 
@@ -36,4 +37,3 @@ class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
         text = "\n".join(f"({i}): {transform}" for i, transform in enumerate(self.transforms))
 
         return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
-

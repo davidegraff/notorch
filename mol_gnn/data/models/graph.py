@@ -1,10 +1,13 @@
 from dataclasses import InitVar, dataclass, field
+import textwrap
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int
 import torch
 from torch import Tensor
 from torch.types import Device
+
+from mol_gnn.conf import REPR_INDENT
 
 
 @dataclass(repr=False, eq=False)
@@ -143,11 +146,13 @@ class Graph:
         return (node_ids, edge_ids)
 
     def __repr__(self) -> str:
-        INDENT = " " * 4
-        lines = [f"{INDENT}{line}" for line in self._build_field_info()]
-        lines = [f"{self.__class__.__name__}("] + lines + [")"]
+        lines = (
+            [f"{self.__class__.__name__}("]
+            + [textwrap.indent(line, REPR_INDENT) for line in self._build_field_info()]
+            + [")"]
+        )
 
-        return "\n".join([f"{self.__class__.__name__}("] + lines + [")"])
+        return "\n".join(lines)
 
     def _build_field_info(self) -> list[str]:
         return [
@@ -181,7 +186,7 @@ class BatchedGraph(Graph):
     def from_graphs(cls, Gs: Iterable[Graph]):
         Vs = []
         Es = []
-        batch_edge_indices = []
+        edge_indices = []
         rev_indices = []
         batch_node_indices = []
         batch_edge_indices = []
@@ -190,17 +195,17 @@ class BatchedGraph(Graph):
         for i, G in enumerate(Gs):
             Vs.append(G.V)
             Es.append(G.E)
-            batch_edge_indices.append(G.edge_index + offset)
+            edge_indices.append(G.edge_index + offset)
             rev_indices.append(G.rev_index + offset)
             batch_node_indices.extend([i] * len(G.V))
             batch_edge_indices.extend([i] * len(G.E))
 
             offset += len(G.V)
 
-        V = torch.cat(Vs).float()
-        E = torch.cat(Es).float()
-        edge_index = torch.cat(batch_edge_indices, dim=1).long()
-        rev_index = torch.cat(rev_indices).long()
+        V = torch.cat(Vs, dim=0)
+        E = torch.cat(Es, dim=0)
+        edge_index = torch.cat(edge_indices, dim=1).long()
+        rev_index = torch.cat(rev_indices, dim=0).long()
         batch_node_index = torch.tensor(batch_node_indices, dtype=torch.long)
         batch_edge_index = torch.tensor(batch_edge_indices, dtype=torch.long)
         size = i + 1
@@ -210,7 +215,7 @@ class BatchedGraph(Graph):
             E,
             edge_index,
             rev_index,
-            device=G.device,
+            device_=G.device,
             batch_node_index=batch_node_index,
             batch_edge_index=batch_edge_index,
             size=size,

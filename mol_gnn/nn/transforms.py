@@ -88,9 +88,7 @@ class EvalTransform(nn.Module):
         return self.module(input) if not self.training else input
 
 
-def build(
-    task: TaskType | None, targets: Float[Tensor, "n t"]
-) -> TaskTransformConfig:
+def build(task: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransformConfig:
     if task is None:
         preds_transform = None
         target_transform = None
