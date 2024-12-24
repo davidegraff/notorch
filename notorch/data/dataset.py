@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader, Dataset
 from notorch.conf import INPUT_KEY_PREFIX, REPR_INDENT, TARGET_KEY_PREFIX
 from notorch.data.managers import DatabaseManager, TransformManager
 from notorch.nn.transforms import build as build_task_transforms
-from notorch.types import DatabaseConfig, TargetConfig, TaskTransformConfig, TaskType
+from notorch.types import DatabaseConfig, TaskTransformConfig, TaskType
 
 
 class NotorchDataset(Dataset[dict]):
@@ -62,14 +62,14 @@ class NotorchDataset(Dataset[dict]):
     def collate(self, samples: Collection[dict]) -> TensorDict:
         batch = TensorDict({}, batch_size=len(samples))
 
-        for transform in self.transforms.values():
-            batch[f"{INPUT_KEY_PREFIX}.{transform.out_key}"] = transform.collate(samples)
         for db in self.databases.values():
             batch[f"{INPUT_KEY_PREFIX}.{db.out_key}"] = db.collate(samples)
         for name in self.targets:
             batch[f"{TARGET_KEY_PREFIX}.{name}"] = torch.stack(
                 [sample[name] for sample in samples], dim=0
             )
+        for transform in self.transforms.values():
+            batch[f"{INPUT_KEY_PREFIX}.{transform.out_key}"] = transform.collate(samples)
 
         return batch
 

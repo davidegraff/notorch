@@ -38,6 +38,17 @@ class Cat(_OpBase):
         return torch.cat(tensors, dim=self.dim)
 
 
+class Split(nn.Module):
+    def __init__(self, split_size: int = 1, dim: int = -1):
+        super().__init__()
+
+        self.split_size = split_size
+        self.dim = dim
+
+    def forward(self, tensor: Tensor) -> tuple[Tensor, ...]:
+        return tensor.split(self.split_size, self.dim)
+
+
 class MatMul(nn.Module):
     """
 

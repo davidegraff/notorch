@@ -88,14 +88,14 @@ class EvalTransform(nn.Module):
         return self.module(input) if not self.training else input
 
 
-def build(task: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransformConfig:
-    if task is None:
+def build(task_type: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransformConfig:
+    if task_type is None:
         preds_transform = None
         target_transform = None
-    elif task in ["regression", "mve", "evidential"]:
+    elif task_type in ["regression", "mve", "evidential"]:
         loc = targets.mean(0)
         scale = targets.std(0)
-        match task:
+        match task_type:
             case "regression":
                 preds_transform = InverseNormalize(loc, scale)
             case "mve":
@@ -104,7 +104,7 @@ def build(task: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransform
                 preds_transform = Evidential(loc, scale)
         target_transform = Normalize(loc, scale)
     else:
-        match task:
+        match task_type:
             case "classification":
                 preds_transform = nn.Sigmoid()
                 target_transform = None
@@ -115,6 +115,6 @@ def build(task: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransform
                 preds_transform = Dirichlet()
                 target_transform = None
             case _:
-                raise InvalidChoiceError(task, get_args(TaskType))
+                raise InvalidChoiceError(task_type, get_args(TaskType))
 
     return {"preds": preds_transform, "targets": target_transform}
