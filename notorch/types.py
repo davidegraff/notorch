@@ -28,15 +28,19 @@ class TransformConfig(TypedDict):
     key: str
 
 
-class TargetTransformConfig(TypedDict):
+class GroupTransformConfig(TypedDict):
     preds: TransformConfig
     targets: TransformConfig
 
 
-class TargetConfig(TypedDict, total=False):
-    columns: Required[Collection[str]]
-    task: str
+# class TargetConfig(TypedDict, total=False):
+#     columns: Required[Collection[str]]
+#     task: str
 
+
+class TargetConfig(TypedDict, total=False):
+    task: Required[TaskType]
+    weight: float
 
 class ModuleConfig(TypedDict):
     module: Callable

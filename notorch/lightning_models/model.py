@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
 
 from notorch.conf import TARGET_KEY_PREFIX
-from notorch.types import LossConfig, LRSchedConfig, ModuleConfig, TargetTransformConfig
+from notorch.types import LossConfig, LRSchedConfig, ModuleConfig, GroupTransformConfig
 
 
 def is_target_key(key: str):
@@ -94,7 +94,7 @@ class NotorchModel(L.LightningModule):
         modules: dict[str, ModuleConfig],
         losses: dict[str, LossConfig],
         metrics: dict[str, LossConfig],
-        transforms: dict[str, TargetTransformConfig] | None = None,
+        transforms: dict[str, GroupTransformConfig] | None = None,
         optim_factory: Callable[[ParamsT], Optimizer] = Adam,
         lr_sched_factory: Callable[[Optimizer], LRScheduler | LRSchedConfig] | None = None,
         keep_all_output: bool = False,
@@ -131,16 +131,14 @@ class NotorchModel(L.LightningModule):
         selected_out_keys = None if keep_all_output else list(selected_out_keys)
 
         transforms_dict = {"preds": [], "targets": []}
-        for transform_config in (transforms or dict()).values():
+        for group_transform_config in (transforms or dict()).values():
             for mode in ["preds", "targets"]:
-                if mode not in transform_config:
+                if mode not in group_transform_config:
                     continue
-                mod = transform_config[mode]["module"]
-                key = transform_config[mode]["key"]
-                if transform_config[mode]["module"] is None:
+                mod = group_transform_config[mode]["module"]
+                key = group_transform_config[mode]["key"]
+                if mod is None:
                     continue
-                if mode == "targets":
-                    key = f"{TARGET_KEY_PREFIX}.{key}"
                 module = TensorDictModule(mod, [key], [key])
                 transforms_dict[mode].append(module)
         transforms_dict = {
@@ -185,16 +183,15 @@ class NotorchModel(L.LightningModule):
         for modules in [self.losses, self.metrics]:
             metric = 0
             for module in modules:
-                batch = module(batch)
                 out_key = module.out_keys[0]
-                _, name = out_key
-                value = batch[out_key]
+                _, name = out_key.split(".")
+                value = module(batch)[out_key]
 
                 val_dict[f"val/{name}"] = value
                 metric += module._weight * value
 
-        self.log_dict(val_dict)
-        self.log("val/loss", metric, prog_bar=True)
+        self.log_dict(val_dict, batch_size=len(batch))
+        self.log("val/loss", metric, prog_bar=True, batch_size=len(batch))
 
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int):
         batch = self(batch)
