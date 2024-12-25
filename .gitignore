@@ -156,3 +156,6 @@ uv.lock
 outputs
 configs
 lightning_logs
+data/
+notes.txt
+test.py
