@@ -55,7 +55,12 @@ class Cat(_OpBase):
 
 
 class Split(nn.Module):
-    """Split the input tensor into chunks of :attr:`split_size` along :attr:`dim`."""
+    """Split the input tensor into chunks of :attr:`split_size` along :attr:`dim`.
+
+    See also
+    --------
+    - :func:`torch.split`
+    """
 
     def __init__(self, split_size: int = 1, dim: int = -1):
         super().__init__()
@@ -64,7 +69,7 @@ class Split(nn.Module):
         self.dim = dim
 
     def forward(self, tensor: Tensor) -> tuple[Tensor, ...]:
-        return tensor.split(self.split_size, self.dim)
+        return torch.split(tensor, self.split_size, self.dim)
 
 
 class MatMul(nn.Module):
@@ -74,6 +79,10 @@ class MatMul(nn.Module):
     ----------
     transpose : bool, default False
         whether to transpose the last two dimensions of :attr:`B`
+
+    See also
+    --------
+    - :func:`torch.matmul`
     """
 
     def __init__(self, transpose: bool = False) -> None:
