@@ -6,7 +6,7 @@ import lightning as L
 from omegaconf import DictConfig, OmegaConf
 from rich import print
 
-from notorch.cli.utils.utils import build_transform_config
+from notorch.cli.utils.utils import build_group_transform_configs
 from notorch.cli.utils.resolvers import register_resolvers
 from notorch.data.dataset import NotorchDataset
 from notorch.data.datamodule import NotorchDataModule
@@ -32,7 +32,7 @@ def train(cfg: DictConfig):
     val: NotorchDataset = hydra.utils.instantiate(cfg.val, _convert_="object")
     transform_key_map = hydra.utils.instantiate(cfg.model.transforms)
     target_transforms = train.build_task_transform_configs()
-    transforms = build_transform_config(transform_key_map, target_transforms)
+    transforms = build_group_transform_configs(transform_key_map, target_transforms)
     model: NotorchModel = hydra.utils.instantiate(
         cfg.model, transforms=transforms, _convert_="object"
     )

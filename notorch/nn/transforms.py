@@ -88,13 +88,13 @@ class EvalTransform(nn.Module):
         return self.module(input) if not self.training else input
 
 
-def build(task_type: TaskType | None, targets: Float[Tensor, "n t"]) -> TaskTransformConfig:
+def build(task_type: TaskType | None, values: Float[Tensor, "n t"]) -> TaskTransformConfig:
     if task_type is None:
         preds_transform = None
         target_transform = None
     elif task_type in ["regression", "mve", "evidential"]:
-        loc = targets.mean(0)
-        scale = targets.std(0)
+        loc = values.mean(0)
+        scale = values.std(0)
         match task_type:
             case "regression":
                 preds_transform = InverseNormalize(loc, scale)
