@@ -21,24 +21,20 @@ class NotorchDataset(Dataset[dict]):
         *,
         transforms: Mapping[str, TaskTransformConfig],
         databases: Mapping[str, DatabaseConfig] | None = None,
-        # target_groups: Mapping[str, TargetConfig] | None = None,
-        targets: Mapping[str, TaskType] | None = None,
+        targets: Mapping[str, TaskType | None] | None = None,
     ):
+        databases = databases or dict()
+        targets = targets or dict()
+
         self.df = df
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
         self.databases = {
-            name: DatabaseManager(**kwargs) for name, kwargs in (databases or dict()).items()
+            name: DatabaseManager(**kwargs) for name, kwargs in databases.items()
         }
-        # self.target_groups = target_groups or dict()
-        # self.targets = targets or dict()
         self.records = self.df.to_dict("records")
         self.targets = {
-            # name: {
-            #     "values": torch.as_tensor(self.df[name].values).to(torch.float),
-            #     "task": task_type,
-            # }
-            name: (torch.as_tensor(self.df[name].values).to(torch.float).unsqueeze(1), task)
-            for name, task in (targets or dict()).items()
+            name: (torch.as_tensor(self.df[name].values[:, None]).float(), task)
+            for name, task in targets.items()
         }
         # self.targets = {
         #     name: torch.as_tensor(self.df[name]) for name, config in (targets or dict()).items()
@@ -50,12 +46,12 @@ class NotorchDataset(Dataset[dict]):
     def __getitem__(self, idx: int) -> dict:
         sample = copy(self.records[idx])
 
-        for name, db in self.databases.items():
+        for _, db in self.databases.items():
             sample = db.update(sample)
-        for transform in self.transforms.values():
-            sample = transform.update(sample)
         for name, (targets, _) in self.targets.items():
             sample[name] = targets[idx]
+        for transform in self.transforms.values():
+            sample = transform.update(sample)
 
         return sample
 
@@ -80,18 +76,9 @@ class NotorchDataset(Dataset[dict]):
         """Build a mapping from target group name to its respective :class:`TaskTransformConfig`."""
         return {
             # name: build_task_transforms(config.get("task"), config["values"])
-            name: build_task_transforms(task_type, targets)
-            for name, (targets, task_type) in self.targets.items()
+            name: build_task_transforms(task_type, values)
+            for name, (values, task_type) in self.targets.items()
         }
-
-    # def __enter__(self) -> Self:
-    #     self.stack = ExitStack()
-    #     [self.stack.enter_context(db) for db in self.databases.values()]
-
-    #     return self
-
-    # def __exit__(self, *exc):
-    #     self.stack = self.stack.close()
 
     def __repr__(self) -> str:
         prettify = lambda obj: pretty_repr(obj, indent_size=2, max_length=4)  # noqa: E731
@@ -119,7 +106,19 @@ class NotorchDataset(Dataset[dict]):
             ]
         )
         databases_repr = "\n".join([f"(databases): {prettify(self.databases)}"])
-        target_groups_repr = "\n".join([f"(target_groups): {prettify(self.target_groups)}"])
+        targets = "\n".join(
+            [
+                "(targets): {",
+                textwrap.indent(
+                    "\n".join(
+                        f"({name}): {prettify(values)}"
+                        for name, (values, _) in self.targets.items()
+                    ),
+                    REPR_INDENT,
+                ),
+                "}",
+            ]
+        )
 
         return "\n".join(
             [
@@ -127,11 +126,19 @@ class NotorchDataset(Dataset[dict]):
                 textwrap.indent(df_repr, REPR_INDENT),
                 textwrap.indent(transform_repr, REPR_INDENT),
                 textwrap.indent(databases_repr, REPR_INDENT),
-                textwrap.indent(target_groups_repr, REPR_INDENT),
+                textwrap.indent(targets, REPR_INDENT),
                 ")",
             ]
         )
 
+        # def __enter__(self) -> Self:
+        #     self.stack = ExitStack()
+        #     [self.stack.enter_context(db) for db in self.databases.values()]
+
+        #     return self
+
+        # def __exit__(self, *exc):
+        #     self.stack = self.stack.close()
 
 """
 NotorchDataset(

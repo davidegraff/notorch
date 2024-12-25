@@ -37,12 +37,7 @@ def train(cfg: DictConfig):
         cfg.model, transforms=transforms, _convert_="object"
     )
 
-    # print(model_kwargs)
     print(model)
-
-    # print(train)
-    # print(len(train))
-    # print(train[4])
 
     trainer = L.Trainer(accelerator="cpu")
     train_loader = train.to_dataloader(**cfg.dataloader, shuffle=True)
