@@ -13,17 +13,33 @@ class _OpBase(nn.Module):
 
 
 class Add(_OpBase):
+    """Add the input tensors along :attr:`dim`
+
+    Parameters
+    ----------
+    dim : int, default=-1
+        the dimension along which to sum
+    """
+
     def forward(self, *tensors: Tensor) -> Tensor:
         return torch.stack(tensors, dim=self.dim).sum(dim=self.dim)
 
 
 class Prod(_OpBase):
+    """Multiply the input tensors along :attr:`dim`
+
+    Parameters
+    ----------
+    dim : int, default=-1
+        the dimension along which to multiply
+    """
+
     def forward(self, *tensors: Tensor) -> Tensor:
         return torch.stack(tensors, dim=self.dim).prod(dim=self.dim)
 
 
 class Cat(_OpBase):
-    """Concatenate the input tensors along :attr:`dim`
+    """Concatenate the input tensors along :attr:`dim`.
 
     Parameters
     ----------
@@ -39,6 +55,8 @@ class Cat(_OpBase):
 
 
 class Split(nn.Module):
+    """Split the input tensor into chunks of :attr:`split_size` along :attr:`dim`."""
+
     def __init__(self, split_size: int = 1, dim: int = -1):
         super().__init__()
 
@@ -50,7 +68,7 @@ class Split(nn.Module):
 
 
 class MatMul(nn.Module):
-    """
+    """Multiply the two matrices :attr:`A` and :attr:`B`.
 
     Parameters
     ----------
