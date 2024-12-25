@@ -42,6 +42,7 @@ class TargetConfig(TypedDict, total=False):
     task: Required[TaskType]
     weight: float
 
+
 class ModuleConfig(TypedDict):
     module: Callable
     in_keys: list[str] | dict[str, str]

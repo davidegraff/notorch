@@ -28,9 +28,7 @@ class NotorchDataset(Dataset[dict]):
 
         self.df = df
         self.transforms = {name: TransformManager(**kwargs) for name, kwargs in transforms.items()}
-        self.databases = {
-            name: DatabaseManager(**kwargs) for name, kwargs in databases.items()
-        }
+        self.databases = {name: DatabaseManager(**kwargs) for name, kwargs in databases.items()}
         self.records = self.df.to_dict("records")
         self.targets = {
             name: (torch.as_tensor(self.df[name].values[:, None]).float(), task)
@@ -139,6 +137,7 @@ class NotorchDataset(Dataset[dict]):
 
         # def __exit__(self, *exc):
         #     self.stack = self.stack.close()
+
 
 """
 NotorchDataset(

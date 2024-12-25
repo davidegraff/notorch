@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import LRScheduler
 from torch.optim.optimizer import ParamsT
 
 from notorch.conf import TARGET_KEY_PREFIX
-from notorch.types import LossConfig, LRSchedConfig, ModuleConfig, GroupTransformConfig
+from notorch.types import GroupTransformConfig, LossConfig, LRSchedConfig, ModuleConfig
 
 
 def is_target_key(key: str):

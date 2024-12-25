@@ -6,10 +6,10 @@ import lightning as L
 from omegaconf import DictConfig, OmegaConf
 from rich import print
 
-from notorch.cli.utils.utils import build_group_transform_configs
 from notorch.cli.utils.resolvers import register_resolvers
-from notorch.data.dataset import NotorchDataset
+from notorch.cli.utils.utils import build_group_transform_configs
 from notorch.data.datamodule import NotorchDataModule
+from notorch.data.dataset import NotorchDataset
 from notorch.lightning_models.model import NotorchModel
 
 register_resolvers()
