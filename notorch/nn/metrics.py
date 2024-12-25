@@ -17,8 +17,8 @@ class MAE(_LossFunctionBase):
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         L = (preds - targets).abs()
 
@@ -31,8 +31,8 @@ class RMSE(_LossFunctionBase):
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         L = F.mse_loss(preds, targets, reduction="none")
 
@@ -53,8 +53,8 @@ class R2(_LossFunctionBase):
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         target_means = (sample_weights * targets).mean(0, keepdim=True)
 
@@ -80,8 +80,8 @@ class AUROC(_ClassificationMetricBase):
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         targets = torch.where(mask, targets, -1).long()
 
@@ -94,8 +94,8 @@ class AUPRC(_ClassificationMetricBase):
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         targets = torch.where(mask, targets, -1).long()
 
@@ -119,8 +119,8 @@ class Accuracy(_LossFunctionBase):
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         if self.task == "binary":
             preds = preds > self.threshold
@@ -147,8 +147,8 @@ class F1(nn.Module):
         preds: Float[Tensor, "b t *k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         targets = torch.where(mask, targets, -1).long()
 

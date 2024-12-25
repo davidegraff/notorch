@@ -25,8 +25,8 @@ class _LossFunctionBase(nn.Module):
         preds: Float[Tensor, "b t ..."],
         targets: Float[Tensor, "b t ..."],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         pass
 
@@ -58,8 +58,8 @@ class _BoundedMixin:
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
         lt_mask: Bool[Tensor, "b t"],
         gt_mask: Bool[Tensor, "b t"],
     ) -> Float[Tensor, ""]:
@@ -102,8 +102,8 @@ class MeanVarianceEstimation(_LossFunctionBase):
         preds: Float[Tensor, "b t 2"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
         **kwargs,
     ) -> Float[Tensor, ""]:
         mean, var = torch.unbind(preds, dim=-1)
@@ -136,8 +136,8 @@ class Evidential(_LossFunctionBase):
         preds: Float[Tensor, "b t 4"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         mean, v, alpha, beta = torch.unbind(preds, dim=-1)
 
@@ -166,8 +166,8 @@ class BinaryCrossEntropy(_LossFunctionBase):
         preds: Float[Tensor, "b t"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         L = F.binary_cross_entropy_with_logits(preds, targets, reduction="none")
 
@@ -180,8 +180,8 @@ class CrossEntropy(_LossFunctionBase):
         preds: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
     ) -> Float[Tensor, ""]:
         preds = preds.transpose(1, 2)
         targets = targets.long()
@@ -277,8 +277,8 @@ class Dirichlet(_LossFunctionBase):
         alphas: Float[Tensor, "b t k"],
         targets: Float[Tensor, "b t"],
         *,
-        mask: Bool[Tensor, "b t"],
-        sample_weights: Float[Tensor, "b"],
+        mask: Bool[Tensor, "b t"] = None,
+        sample_weights: Float[Tensor, "b"] = None,
         **kwargs,
     ) -> Float[Tensor, ""]:
         alphas = F.softplus(alphas) + 1
