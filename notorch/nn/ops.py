@@ -101,6 +101,8 @@ class MatMul(nn.Module):
 
 
 class Einsum(nn.Module):
+    """Apply the specified Einstein summation operation to the input tensors."""
+
     def __init__(self, equation: str):
         super().__init__()
 

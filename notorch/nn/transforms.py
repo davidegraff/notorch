@@ -1,4 +1,4 @@
-from typing import Any, Callable, get_args
+from typing import get_args
 
 from jaxtyping import Float
 from numpy.typing import ArrayLike
@@ -68,53 +68,31 @@ class Dirichlet(nn.Module):
         return torch.cat([alpha / S, k / S], dim=-1)
 
 
-class TrainTransform(nn.Module):
-    def __init__(self, module: Callable[..., Any]):
-        super().__init__()
-
-        self.module = module
-
-    def forward(self, input):
-        return self.module(input) if self.training else input
-
-
-class EvalTransform(nn.Module):
-    def __init__(self, module: Callable[..., Any]):
-        super().__init__()
-
-        self.module = module
-
-    def forward(self, input):
-        return self.module(input) if not self.training else input
-
-
 def build(task_type: TaskType | None, values: Float[Tensor, "n t"]) -> TaskTransformConfig:
     if task_type is None:
         preds_transform = None
         target_transform = None
     elif task_type in ["regression", "mve", "evidential"]:
-        loc = values.mean(0)
-        scale = values.std(0)
+        mean = values.mean(0)
+        std = values.std(0)
         match task_type:
             case "regression":
-                preds_transform = InverseNormalize(loc, scale)
+                preds_transform = InverseNormalize(mean, std)
             case "mve":
-                preds_transform = MVE(loc, scale)
+                preds_transform = MVE(mean, std)
             case "evidential":
-                preds_transform = Evidential(loc, scale)
-        target_transform = Normalize(loc, scale)
+                preds_transform = Evidential(mean, std)
+        target_transform = Normalize(mean, std)
     else:
         match task_type:
             case "classification":
                 preds_transform = nn.Sigmoid()
-                target_transform = None
             case "multiclass":
                 preds_transform = nn.Softmax(-1)
-                target_transform = None
             case "dirichlet":
                 preds_transform = Dirichlet()
-                target_transform = None
             case _:
                 raise InvalidChoiceError(task_type, get_args(TaskType))
+        target_transform = None
 
     return {"preds": preds_transform, "targets": target_transform}

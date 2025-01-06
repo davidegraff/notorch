@@ -20,7 +20,7 @@ def is_target_key(key: str):
 
 
 class NotorchModel(L.LightningModule):
-    """A :class:`SimpleModel` is a generic class for composing (mostly) arbitrary models.
+    """A :class:`NotorchModel` is a generic class for composing (mostly) arbitrary models.
 
     The general recipe consists of three configuration dictionaries that define the model, the loss,
     and the evaluation/testing metrics, respectively. The model configuration dictionary defines a
@@ -70,17 +70,17 @@ class NotorchModel(L.LightningModule):
         The overall validation loss is computed as the weighted sum of all loss term values. For
         details on the ``in_keys`` key, see :attr:`modules`.
 
-    transforms : dict[str, TargetTransformConfig] | None
+    transforms : dict[str, GroupTransformConfig] | None
         A mapping from a name to a dictionary of dictionaries defining the configuration for both
         prediction and target transforms. The outer dictionary contains two keys, ``"preds"`` and
         ``"targets"``, each mapping to a dictionary with the following keys:
 
         - ``module``: any ``Callable``, typically a :class:`~torch.nn.Module`, that has **no
-        learnable parameters** that will be applied to the specified key in the tensordict
-        - ``key``: the key in the tensordict whose value will be _modified and ovewritten in place_.
+        learnable parameters** that will be applied to the corresponding `key` in the input
+        - ``key``: the key in the tensordict whose value will be _modified in place_.
 
         The ``"preds"`` transforms will be applied to model predictions at inference time via
-        :meth:`SimpleModel.predict_step` and the ``"targets"`` transforms will be applied to the
+        :meth:`predict_step` and the ``"targets"`` transforms will be applied to the
         input targets during training and validation.
 
         .. note::
