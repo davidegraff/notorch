@@ -9,15 +9,6 @@ import torch.nn.functional as F
 
 
 class _LossFunctionBase(nn.Module):
-    task_weights: Float[Tensor, "1 #t"] | None
-
-    def __init__(self, task_weights: Float[ArrayLike, "*t"] | None = None) -> None:
-        super().__init__()
-
-        if task_weights is not None:
-            task_weights = torch.atleast_2d(torch.as_tensor(task_weights)).float()
-
-        self.register_buffer("task_weights", task_weights)
 
     @abstractmethod
     def forward(
@@ -36,20 +27,10 @@ class _LossFunctionBase(nn.Module):
         mask: Bool[Tensor, "b t"] | None = None,
         sample_weights: Float[Tensor, "b"] | None = None,
     ) -> Float[Tensor, ""]:
-        match self.task_weights, sample_weights:
-            case None, None:
-                pass
-            case None, _:
-                loss = loss * sample_weights.unsqueeze(0)
-            case _, None:
-                loss = loss * self.task_weights
-            case _, _:
-                loss = loss * self.task_weights * sample_weights.unsqueeze(0)
+        if sample_weights is not None:
+            loss = loss * sample_weights.unsqueeze(0)
 
         return loss.mean() if mask is None else (loss * mask).sum() / mask.sum()
-
-    def extra_repr(self) -> str:
-        return f"task_weights={self.task_weights}"
 
 
 class _BoundedMixin:
@@ -125,8 +106,8 @@ class Evidential(_LossFunctionBase):
         Cent. Sci. 2021, 7, 8, 1356-1367. https://doi.org/10.1021/acscentsci.1c00546
     """
 
-    def __init__(self, task_weights: Float[ArrayLike, "t"], v_kl: float = 0.2, eps: float = 1e-8):
-        super().__init__(task_weights)
+    def __init__(self, v_kl: float = 0.2, eps: float = 1e-8):
+        super().__init__()
 
         self.v_kl = v_kl
         self.eps = eps
@@ -267,8 +248,8 @@ class Dirichlet(_LossFunctionBase):
     .. [sensoyGithub] https://muratsensoy.github.io/uncertainty.html#Define-the-loss-function
     """
 
-    def __init__(self, task_weights: Float[ArrayLike, "t"], v_kl: float = 0.2) -> None:
-        super().__init__(task_weights)
+    def __init__(self, v_kl: float = 0.2) -> None:
+        super().__init__()
 
         self.v_kl = v_kl
 

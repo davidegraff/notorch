@@ -61,7 +61,7 @@ class R2(_LossFunctionBase):
         rss = torch.sum(sample_weights * (preds - targets).square() * mask, dim=0)
         tss = torch.sum(sample_weights * (targets - target_means).square() * mask, dim=0)
 
-        return ((1 - rss / tss) * self.task_weights).mean(0)
+        return (1 - rss / tss).mean(0)
 
 
 class _ClassificationMetricBase(nn.Module):
@@ -105,11 +105,10 @@ class AUPRC(_ClassificationMetricBase):
 class Accuracy(_LossFunctionBase):
     def __init__(
         self,
-        task_weights: Float[ArrayLike, "t"],
         task: Literal["binary", "multilabel"],
         threshold: float = 0.5,
     ):
-        super().__init__(task_weights)
+        super().__init__()
 
         self.task = task
         self.threshold = threshold
