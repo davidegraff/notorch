@@ -156,6 +156,8 @@ uv.lock
 outputs
 configs
 lightning_logs
+logs
+checkpoints
 datasets
 notes.txt
 test.py

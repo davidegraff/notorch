@@ -6,6 +6,7 @@ import lightning as L
 from omegaconf import DictConfig, OmegaConf
 from rich import print
 
+import notorch.cli.utils.instantiate as instantiate
 from notorch.cli.utils.resolvers import register_resolvers
 from notorch.cli.utils.utils import build_group_transform_configs
 from notorch.data.datamodule import NotorchDataModule
@@ -18,16 +19,6 @@ log = logging.getLogger(__name__)
 
 @hydra.main(config_path="configs", config_name="train", version_base=None)
 def train(cfg: DictConfig):
-    # print(dict(**cfg.dataloader))
-    # print(OmegaConf.to_yaml(cfg))
-    # print(hydra.utils.instantiate(cfg.data, _convert_="object"))
-    # import pdb; pdb.set_trace()
-    # data_cfg = hydra.utils.instantiate(cfg.data, _convert_="object")
-    # print(data_cfg)
-    # data_cfg["df"] = df
-    # dataset_factory: Callable[..., NotorchDataset] = hydra.utils.instantiate(
-    #     cfg.data, _convert_="object"
-    # )
     train: NotorchDataset = hydra.utils.instantiate(cfg.train, _convert_="object")
     val: NotorchDataset = hydra.utils.instantiate(cfg.val, _convert_="object")
     transform_key_map = hydra.utils.instantiate(cfg.model.transforms)
@@ -37,9 +28,13 @@ def train(cfg: DictConfig):
         cfg.model, transforms=transforms, _convert_="object"
     )
 
-    print(model)
+    callbacks = instantiate.callbacks(cfg.callbacks)
+    loggers = instantiate.loggers(cfg.loggers)
+    trainer = hydra.utils.instantiate(cfg.trainer, logger=loggers, callbacks=callbacks)
 
-    trainer = L.Trainer(accelerator="cpu")
+    print(model)
+    print(trainer)
+
     train_loader = train.to_dataloader(**cfg.dataloader, shuffle=True)
     val_loader = val.to_dataloader(**cfg.dataloader)
     trainer.fit(model, train_loader, val_loader)
