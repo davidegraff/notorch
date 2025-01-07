@@ -1,14 +1,9 @@
-from __future__ import annotations
-
 from copy import copy
-from typing import Literal
 
 import torch.nn as nn
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
 from notorch.data.models.graph import Graph
-
-Reduction = Literal["mean", "sum", "min", "max"]
 
 
 class GraphEmbedding(nn.Module):
