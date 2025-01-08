@@ -86,6 +86,3 @@ class MultiTypeBondTransform:
         text = "\n".join(lines)
 
         return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])
-
-    def stringify_choices(self):
-        return list(map(str))
