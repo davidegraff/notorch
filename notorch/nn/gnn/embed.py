@@ -38,5 +38,5 @@ class GraphEmbedding(nn.Module):
         return self.edge.num_embeddings
 
     @classmethod
-    def from_transform(cls, transform: GraphTransform, **kwargs) -> GraphEmbedding:    
+    def from_transform(cls, transform: GraphTransform, **kwargs) -> GraphEmbedding:
         return cls(transform.num_node_types, transform.num_edge_types, **kwargs)

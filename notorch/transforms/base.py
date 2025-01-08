@@ -40,10 +40,6 @@ class Pipeline[S, T, T_batched](Transform[S, T, T_batched]):
         return output  # type: ignore
 
     def __repr__(self) -> str:
-        text = "\n".join(
-            f"({i}): {transform}" for i, transform in enumerate(self.transforms)
-        )
+        text = "\n".join(f"({i}): {transform}" for i, transform in enumerate(self.transforms))
 
-        return "\n".join(
-            [f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"]
-        )
+        return "\n".join([f"{type(self).__name__}(", textwrap.indent(text, REPR_INDENT), ")"])

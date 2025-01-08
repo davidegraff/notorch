@@ -1,7 +1,6 @@
 from typing import Literal
 
 from jaxtyping import Bool, Float
-from numpy.typing import ArrayLike
 import torch
 from torch import Tensor
 import torch.nn as nn
@@ -103,11 +102,7 @@ class AUPRC(_ClassificationMetricBase):
 
 
 class Accuracy(_LossFunctionBase):
-    def __init__(
-        self,
-        task: Literal["binary", "multilabel"],
-        threshold: float = 0.5,
-    ):
+    def __init__(self, task: Literal["binary", "multilabel"], threshold: float = 0.5):
         super().__init__()
 
         self.task = task
