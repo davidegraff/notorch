@@ -2,7 +2,7 @@ from dataclasses import InitVar, dataclass, field
 import textwrap
 from typing import Iterable, Self
 
-from jaxtyping import Float, Int
+from jaxtyping import Float, Int, Num
 import torch
 from torch import Tensor
 from torch.types import Device
@@ -12,10 +12,10 @@ from notorch.conf import REPR_INDENT
 
 @dataclass(repr=False, eq=False)
 class PointCloud:
+    X: Num[Tensor, "V t"]
+    """a tensor of shape ``V x t`` containing the types/features of each node in the point cloud."""
     R: Float[Tensor, "V d_r"]
     """a tensor of shape ``V x d_r`` containing the coordinates of each node in the point cloud."""
-    t: Int[Tensor, "V t"]
-    """a tensor of shape ``V x t`` containing the types of each node in the point cloud."""
     device_: InitVar[Device] = field(default=None, kw_only=True)
 
     def __post_init__(self, device_: Device):
@@ -33,8 +33,8 @@ class PointCloud:
     def to(self, device: Device) -> Self:
         self.__device = device
 
+        self.X = self.X.to(device)
         self.R = self.R.to(device)
-        self.t = self.t.to(device)
 
         return self
 
@@ -49,8 +49,8 @@ class PointCloud:
 
     def _build_field_info(self) -> list[str]:
         return [
+            f"X: Tensor(shape={self.X.shape})",
             f"R: Tensor(shape={self.R.shape})",
-            f"t: Tensor(shape={self.t.shape})",
             f"device={self.__device}",
             "",
         ]
@@ -78,29 +78,29 @@ class BatchedPointCloud(PointCloud):
 
     @classmethod
     def from_point_clouds(cls, Ps: Iterable[PointCloud]):
+        Xs = []
         Rs = []
-        ts = []
         batch_indices = []
         offset = 0
 
         for i, P in enumerate(Ps):
+            Xs.append(P.X)
             Rs.append(P.R)
-            ts.append(P.t)
             batch_indices.extend([i] * P.num_nodes)
 
             offset += P.num_nodes
 
+        X = torch.cat(Xs, dim=0)
         R = torch.cat(Rs, dim=0)
-        t = torch.cat(ts, dim=0)
         batch_index = torch.tensor(batch_indices, dtype=torch.long)
         size = i + 1
 
-        return cls(R, t, batch_index=batch_index, size=size, device_=P.device)
+        return cls(X, R, batch_index=batch_index, size=size, device_=P.device)
 
     def _build_field_info(self) -> list[str]:
         return [
+            f"X: Tensor(shape={self.X.shape})",
             f"R: Tensor(shape={self.R.shape})",
-            f"t: Tensor(shape={self.t.shape})",
             f"device={self.__device}",
             f"batch_size={len(self)}" "",
         ]
