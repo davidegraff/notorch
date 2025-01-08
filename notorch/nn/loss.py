@@ -1,7 +1,6 @@
 from abc import abstractmethod
 
 from jaxtyping import Bool, Float
-from numpy.typing import ArrayLike
 import torch
 from torch import Tensor
 import torch.nn as nn
@@ -9,7 +8,6 @@ import torch.nn.functional as F
 
 
 class _LossFunctionBase(nn.Module):
-
     @abstractmethod
     def forward(
         self,

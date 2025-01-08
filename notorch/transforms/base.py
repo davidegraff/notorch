@@ -4,6 +4,7 @@ import textwrap
 from typing import ClassVar, Protocol
 
 from notorch.conf import REPR_INDENT
+from notorch.data.models.graph import BatchedGraph, Graph
 
 
 class Transform[S, T, T_batched](Protocol):
@@ -17,6 +18,11 @@ class Transform[S, T, T_batched](Protocol):
 
     def __call__(self, input: S) -> T: ...
     def collate(self, inputs: Collection[T]) -> T_batched: ...
+
+
+class GraphTransform[S](Transform[S, Graph, BatchedGraph]):
+    num_node_types: int
+    num_edge_types: int
 
 
 @dataclass
