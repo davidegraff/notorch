@@ -6,6 +6,7 @@ import torch.nn as nn
 class _OpBase(nn.Module):
     def __init__(self, dim: int = 0):
         super().__init__()
+
         self.dim = dim
 
     def extra_repr(self):

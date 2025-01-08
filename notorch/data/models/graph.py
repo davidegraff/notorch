@@ -15,9 +15,9 @@ class Graph:
     """A :class:`Graph` represents the feature representation of graph."""
 
     V: Int[Tensor, "V t_v"]
-    """a tensor of shape ``|V| x t_v`` containing the vertex types of the graph"""
+    """a tensor of shape ``|V| x t_v`` containing the vertex types/features of the graph"""
     E: Int[Tensor, "E t_e"]
-    """a tensor of shape ``|E| x t_e`` containing the edge types of the graph"""
+    """a tensor of shape ``|E| x t_e`` containing the edge types/features of the graph"""
     edge_index: Int[Tensor, "2 E"]
     """a tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
     rev_index: Int[Tensor, "E"]
