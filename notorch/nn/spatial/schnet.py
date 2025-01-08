@@ -1,8 +1,6 @@
 from collections.abc import Iterable
-from copy import copy
 
 from jaxtyping import Float, Int
-import torch
 import torch.nn as nn
 from torch import Tensor
 from torch_cluster import radius_graph
@@ -75,19 +73,17 @@ class InteractionLayer(nn.Module):
 class SchnetBlock(nn.Module):
     def __init__(
         self,
-        in_features: int,
         hidden_dim: int,
-        out_dim: int,
         d_min: float,
         d_max: float,
         num_bases: int,
-        radii: Iterable[float],
+        radii: Iterable[float] = (5., 5., 5.),
         act: type[nn.Module] = nn.ReLU,
     ):
         super().__init__()
 
         layers = [
-            InteractionLayer(in_features, hidden_dim, d_min, d_max, num_bases, radius, act)
+            InteractionLayer(hidden_dim, d_min, d_max, num_bases, radius, act)
             for radius in radii
         ]
         layers = [Residual(layer) for layer in layers]
