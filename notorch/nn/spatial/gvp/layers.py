@@ -1,8 +1,8 @@
 from jaxtyping import Float
 import torch
 from torch import Tensor
-import torch.nn as nn
 import torch.linalg as LA
+import torch.nn as nn
 
 
 class GeometricVectorPerceptron(nn.Module):
