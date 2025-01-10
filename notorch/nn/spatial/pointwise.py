@@ -1,4 +1,5 @@
 from copy import copy
+
 import torch.nn as nn
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
