@@ -7,6 +7,7 @@ import torch.nn as nn
 
 class GeometricVectorPerceptron(nn.Module):
     """not sure why this is in here. Prefer :class:`GatedGVP`"""
+
     def __init__(
         self,
         in_dims: tuple[int, int],
@@ -27,7 +28,6 @@ class GeometricVectorPerceptron(nn.Module):
         self.W_u = nn.Linear(hidden_dim, vect_out_dim, bias=False)
         self.scalar_act = scalar_act()
         self.vector_act = vector_act() if vector_act is not None else None
-
 
     def forward(
         self, inputs: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]]
@@ -64,6 +64,7 @@ class GatedGeometricVectorPerceptron(nn.Module):
     ----------
     .. [1] arXiv:2106.03843 [cs.LG]
     """
+
     def __init__(
         self,
         in_dims: tuple[int, int],
@@ -108,6 +109,55 @@ class GatedGeometricVectorPerceptron(nn.Module):
         V_o = V_u * self.sigmoid(v_g.unsqueeze(-2))
 
         return s_o, V_o
+
+
+class ChannelDropout(nn.Module):
+    def __init__(self, p: float = 0.5):
+        super().__init__()
+
+        self.p = p
+
+    def forward(self, X: Float[Tensor, "... d"]) -> Float[Tensor, "... d"]:
+        if not self.training:
+            return X
+
+        mask = torch.full(X.shape[:-1], 1 - self.p, device=X.device).bernoulli_().unsqueeze_(-1)
+
+        return X * mask
+
+    def extra_repr(self) -> str:
+        return f"p={self.p:0.2}"
+
+
+class Dropout(nn.Module):
+    def __init__(self, p: float = 0.5):
+        super().__init__()
+
+        self.scalar_dropout = nn.Dropout(p)
+        self.vector_dropout = ChannelDropout(p)
+
+    def forward(
+        self, inputs: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]]
+    ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
+        s, V = inputs
+
+        return self.scalar_dropout(s), self.vector_dropout(V)
+
+
+class LayerNorm(nn.Module):
+    def __init__(self, dims: tuple[int, int | None]):
+        super().__init__()
+
+        scalar_dim, vect_dim = dims
+
+        self.scalar_ln = nn.LayerNorm(scalar_dim)
+
+    def forward(
+        self, inputs: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]]
+    ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
+        s, V = inputs
+
+        return self.scalar_ln(s), V
 
 
 GVP = GeometricVectorPerceptron
