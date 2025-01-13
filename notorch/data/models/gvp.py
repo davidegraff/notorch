@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
@@ -5,17 +6,19 @@ import textwrap
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int, Num
+from tensordict import tensorclass
 import torch
 from torch import Tensor
 from torch.types import Device
 
 from notorch.conf import REPR_INDENT
 
-
 @dataclass(repr=False, eq=False)
-class PointCloud:
-    node_feats: Num[Tensor, "V t"]
-    """a tensor of shape ``V x t`` containing the node types/features."""
+class GVPPointCloud:
+    scalar_feats: Num[Tensor, "V t"]
+    """a tensor of shape ``V x t`` containing the scalar node types/features."""
+    vector_feats: Num[Tensor, "V r d_v"]
+    """a tensor of shape ``V x r x d_v`` containing the vector node features of each node."""
     coords: Float[Tensor, "V r"]
     """a tensor of shape ``V x r`` containing the node coordinates."""
     device_: InitVar[Device] = field(default=None, kw_only=True)
@@ -35,10 +38,19 @@ class PointCloud:
     def to(self, device: Device) -> Self:
         self.__device = device
 
-        self.node_feats = self.node_feats.to(device)
+        self.scalar_feats = self.scalar_feats.to(device)
+        self.vector_feats = self.vector_feats.to(device)
         self.coords = self.coords.to(device)
 
         return self
+
+    def __add__(self, other: GVPPointCloud) -> GVPPointCloud:
+        return GVPPointCloud(
+            self.scalar_feats + other.scalar_feats,
+            self.vector_feats + other.vector_feats,
+            self.coords,
+            self.device,
+        )
 
     def __repr__(self) -> str:
         lines = (
@@ -51,7 +63,8 @@ class PointCloud:
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"scalar_feats: Tensor(shape={self.scalar_feats.shape})",
+            f"vector_feats: Tensor(shape={self.vector_feats.shape})",
             f"coords: Tensor(shape={self.coords.shape})",
             f"device={self.__device}",
             "",
@@ -59,7 +72,7 @@ class PointCloud:
 
 
 @dataclass(repr=False, eq=False, kw_only=True)
-class BatchedPointCloud(PointCloud):
+class BatchedGVPPointCloud(GVPPointCloud):
     """A :class:`BatchedPointCloud` represents a batch of individual :class:`PointCloud`s."""
 
     batch_index: Int[Tensor, "V"]
@@ -78,30 +91,46 @@ class BatchedPointCloud(PointCloud):
         """The number of individual :class:`PointCloud`s in this batch"""
         return self.__size
 
+    def __add__(self, other: BatchedGVPPointCloud) -> BatchedGVPPointCloud:
+        return BatchedGVPPointCloud(
+            self.scalar_feats + other.scalar_feats,
+            self.vector_feats + other.vector_feats,
+            self.coords,
+            self.device,
+            batch_index=self.batch_index,
+            size=len(self),
+        )
+
     @classmethod
-    def from_point_clouds(cls, Ps: Iterable[PointCloud]):
-        node_featss = []
+    def from_point_clouds(cls, Ps: Iterable[GVPPointCloud]):
+        scalar_featss = []
+        vector_featss = []
         coordss = []
         batch_indices = []
         offset = 0
 
         for i, P in enumerate(Ps):
-            node_featss.append(P.node_feats)
+            scalar_featss.append(P.scalar_feats)
+            vector_featss.append(P.vector_feats)
             coordss.append(P.coords)
             batch_indices.extend([i] * P.num_nodes)
 
             offset += P.num_nodes
 
-        X = torch.cat(node_featss, dim=0)
-        R = torch.cat(coordss, dim=0)
+        scalar_feats = torch.cat(scalar_featss, dim=0)
+        vector_feats = torch.cat(vector_featss, dim=0)
+        coords = torch.cat(coordss, dim=0)
         batch_index = torch.tensor(batch_indices, dtype=torch.long)
         size = i + 1
 
-        return cls(X, R, batch_index=batch_index, size=size, device_=P.device)
+        return cls(
+            scalar_feats, vector_feats, coords, batch_index=batch_index, size=size, device_=P.device
+        )
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"scalar_feats: Tensor(shape={self.scalar_feats.shape})",
+            f"vector_feats: Tensor(shape={self.vector_feats.shape})",
             f"coords: Tensor(shape={self.coords.shape})",
             f"batch_size={len(self)}",
             f"device={self.__device}",
