@@ -15,7 +15,7 @@ class PointwiseEmbed(nn.Module):
 
     def forward(self, P: PointCloud) -> PointCloud:
         P_emb = copy(P)
-        P_emb.X = self.node(P_emb.X)
+        P_emb.node_feats = self.node(P_emb.node_feats)
 
         return P_emb
 
@@ -35,6 +35,6 @@ class PointwiseMLP(nn.Module):
 
     def forward(self, P: PointCloud) -> PointCloud:
         P_emb = copy(P)
-        P_emb.X = self.mlp(P_emb.X)
+        P_emb.node_feats = self.mlp(P_emb.node_feats)
 
         return P_emb

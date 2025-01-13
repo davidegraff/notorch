@@ -12,17 +12,17 @@ from notorch.data.models.point_cloud import BatchedPointCloud
 
 class Sum(nn.Module):
     def forward(self, P: BatchedPointCloud) -> Float[Tensor, "b d_v"]:
-        return scatter_sum(P.X, P.batch_index, dim=0, dim_size=len(P))
+        return scatter_sum(P.node_feats, P.batch_index, dim=0, dim_size=len(P))
 
 
 class Mean(nn.Module):
     def forward(self, P: BatchedPointCloud) -> Float[Tensor, "b d_v"]:
-        return scatter_mean(P.X, P.batch_index, dim=0, dim_size=len(P))
+        return scatter_mean(P.node_feats, P.batch_index, dim=0, dim_size=len(P))
 
 
 class Max(nn.Module):
     def forward(self, P: BatchedPointCloud) -> Float[Tensor, "b d_v"]:
-        H, _ = scatter_max(P.X, P.batch_index, dim=0, dim_size=len(P))
+        H, _ = scatter_max(P.node_feats, P.batch_index, dim=0, dim_size=len(P))
 
         return H
 
@@ -34,9 +34,11 @@ class Gated(nn.Module):
         self.a = nn.Linear(input_dim, 1)
 
     def forward(self, P: BatchedPointCloud) -> Float[Tensor, "b d_v"]:
-        scores = self.a(P.X)
-        alpha = scatter_softmax(scores, P.X, dim=0, dim_size=len(P.X)).unsqueeze(1)
-        H = scatter_sum(alpha * P.X, P.batch_index, dim=0, dim_size=len(P.X))
+        scores = self.a(P.node_feats)
+        alpha = scatter_softmax(scores, P.node_feats, dim=0, dim_size=len(P.node_feats)).unsqueeze(
+            1
+        )
+        H = scatter_sum(alpha * P.node_feats, P.batch_index, dim=0, dim_size=len(P.node_feats))
 
         return H
 
@@ -50,8 +52,12 @@ class SDPAttention(nn.Module):
     def forward(
         self, P: BatchedPointCloud, *, Q: Float[Tensor, "b d_v"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        scores = torch.einsum("V d_v, V d_v -> V", Q[P.batch_index], P.X) / self.sqrt_key_dim
-        alpha = scatter_softmax(scores, P.batch_index, dim=0, dim_size=len(P.X)).unsqueeze(1)
-        H = scatter_sum(alpha * P.X, P.batch_index, dim=0, dim_size=len(P.X))
+        scores = (
+            torch.einsum("V d_v, V d_v -> V", Q[P.batch_index], P.node_feats) / self.sqrt_key_dim
+        )
+        alpha = scatter_softmax(scores, P.batch_index, dim=0, dim_size=len(P.node_feats)).unsqueeze(
+            1
+        )
+        H = scatter_sum(alpha * P.node_feats, P.batch_index, dim=0, dim_size=len(P.node_feats))
 
         return H

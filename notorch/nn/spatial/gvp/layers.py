@@ -137,8 +137,8 @@ class Dropout(nn.Module):
         self.vector_dropout = ChannelDropout(p)
 
     def forward(
-        self, inputs: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]]
-    ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
+        self, inputs: tuple[Float[Tensor, "n d_s"], Float[Tensor, "n r d_v"]]
+    ) -> tuple[Float[Tensor, "n d_s"], Float[Tensor, "n r d_v"]]:
         s, V = inputs
 
         return self.scalar_dropout(s), self.vector_dropout(V)
@@ -148,13 +148,13 @@ class LayerNorm(nn.Module):
     def __init__(self, dims: tuple[int, int | None]):
         super().__init__()
 
-        scalar_dim, vect_dim = dims
+        scalar_dim, _ = dims
 
         self.scalar_ln = nn.LayerNorm(scalar_dim)
 
     def forward(
-        self, inputs: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]]
-    ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
+        self, inputs: tuple[Float[Tensor, "n d_s"], Float[Tensor, "n r d_v"]]
+    ) -> tuple[Float[Tensor, "n d_s"], Float[Tensor, "n r d_v"]]:
         s, V = inputs
 
         return self.scalar_ln(s), V
