@@ -62,3 +62,6 @@ class LRSchedConfig(TypedDict, total=False):
     monitor: str
     strict: bool
     name: str | None
+
+
+Reduction = Literal["mean", "sum", "min", "max"]

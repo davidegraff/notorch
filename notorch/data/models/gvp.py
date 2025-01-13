@@ -5,6 +5,7 @@ import textwrap
 from typing import Iterable, Self
 
 from jaxtyping import Float, Int, Num
+from tensordict import tensorclass
 import torch
 from torch import Tensor
 from torch.types import Device
@@ -12,10 +13,29 @@ from torch.types import Device
 from notorch.conf import REPR_INDENT
 
 
+@tensorclass
+class DualRankFeatures:
+    scalar_feats: Num[Tensor, "*b d_s"]
+    """a tensor of shape ``*b x t`` containing the scalar node types/features."""
+    vector_feats: Float[Tensor, "*b r d_v"]
+    """a tensor of shape ``*b x r x d_v`` containing the vector node features of each node."""
+
+    def __post_init__(self):
+        scalar_batch_shape = self.scalar_feats.shape[:-1]
+        vector_batch_shape = self.vector_feats.shape[:-2]
+        if scalar_batch_shape != vector_batch_shape:
+            raise RuntimeError(
+                "scalar and vector features must have equivalent batch dimensions! "
+                f"Got {list(scalar_batch_shape)} and {list(vector_batch_shape)}, respectively."
+            )
+
+        self.batch_size = scalar_batch_shape
+
+
 @dataclass(repr=False, eq=False)
-class PointCloud:
-    node_feats: Num[Tensor, "V t"]
-    """a tensor of shape ``V x t`` containing the node types/features."""
+class GVPPointCloud:
+    node_feats: DualRankFeatures
+    """the scalar and vector node features."""
     coords: Float[Tensor, "V r"]
     """a tensor of shape ``V x r`` containing the node coordinates."""
     device_: InitVar[Device] = field(default=None, kw_only=True)
@@ -35,7 +55,8 @@ class PointCloud:
     def to(self, device: Device) -> Self:
         self.__device = device
 
-        self.node_feats = self.node_feats.to(device)
+        self.scalar_feats = self.scalar_feats.to(device)
+        self.vector_feats = self.vector_feats.to(device)
         self.coords = self.coords.to(device)
 
         return self
@@ -51,7 +72,7 @@ class PointCloud:
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"node_feats: {self.node_feats}",
             f"coords: Tensor(shape={self.coords.shape})",
             f"device={self.__device}",
             "",
@@ -59,7 +80,7 @@ class PointCloud:
 
 
 @dataclass(repr=False, eq=False, kw_only=True)
-class BatchedPointCloud(PointCloud):
+class BatchedGVPPointCloud(GVPPointCloud):
     """A :class:`BatchedPointCloud` represents a batch of individual :class:`PointCloud`s."""
 
     batch_index: Int[Tensor, "V"]
@@ -79,29 +100,31 @@ class BatchedPointCloud(PointCloud):
         return self.__size
 
     @classmethod
-    def from_point_clouds(cls, Ps: Iterable[PointCloud]):
+    def from_point_clouds(cls, Ps: Iterable[GVPPointCloud]):
         node_featss = []
+        vector_featss = []
         coordss = []
         batch_indices = []
         offset = 0
 
         for i, P in enumerate(Ps):
             node_featss.append(P.node_feats)
+            vector_featss.append(P.vector_feats)
             coordss.append(P.coords)
             batch_indices.extend([i] * P.num_nodes)
 
             offset += P.num_nodes
 
-        X = torch.cat(node_featss, dim=0)
-        R = torch.cat(coordss, dim=0)
+        node_feats = torch.cat(node_featss, dim=0)
+        coords = torch.cat(coordss, dim=0)
         batch_index = torch.tensor(batch_indices, dtype=torch.long)
         size = i + 1
 
-        return cls(X, R, batch_index=batch_index, size=size, device_=P.device)
+        return cls(node_feats, coords, batch_index=batch_index, size=size, device_=P.device)
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"node_feats: {self.node_feats}",
             f"coords: Tensor(shape={self.coords.shape})",
             f"batch_size={len(self)}",
             f"device={self.__device}",

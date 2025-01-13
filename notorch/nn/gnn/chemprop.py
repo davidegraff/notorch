@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Literal
 
 import torch.nn as nn
 from torch_scatter import scatter
 
 from notorch.data.models.graph import Graph
 from notorch.nn.residual import Residual
-
-Reduction = Literal["mean", "sum", "min", "max"]
+from notorch.types import Reduction
 
 
 class ChempropLayer(nn.Module):
