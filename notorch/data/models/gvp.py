@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from dataclasses import InitVar, dataclass, field
@@ -16,10 +15,21 @@ from notorch.conf import REPR_INDENT
 
 @tensorclass
 class DualRankFeatures:
-    scalar_feats: Num[Tensor, "*n d_s"]
-    """a tensor of shape ``V x t`` containing the scalar node types/features."""
-    vector_feats: Float[Tensor, "*n r d_v"]
-    """a tensor of shape ``V x r x d_v`` containing the vector node features of each node."""
+    scalar_feats: Num[Tensor, "*b d_s"]
+    """a tensor of shape ``*b x t`` containing the scalar node types/features."""
+    vector_feats: Float[Tensor, "*b r d_v"]
+    """a tensor of shape ``*b x r x d_v`` containing the vector node features of each node."""
+
+    def __post_init__(self):
+        scalar_batch_shape = self.scalar_feats.shape[:-1]
+        vector_batch_shape = self.vector_feats.shape[:-2]
+        if scalar_batch_shape != vector_batch_shape:
+            raise RuntimeError(
+                "scalar and vector features must have equivalent batch dimensions! "
+                f"Got {list(scalar_batch_shape)} and {list(vector_batch_shape)}, respectively."
+            )
+
+        self.batch_size = scalar_batch_shape
 
 
 @dataclass(repr=False, eq=False)
@@ -110,9 +120,7 @@ class BatchedGVPPointCloud(GVPPointCloud):
         batch_index = torch.tensor(batch_indices, dtype=torch.long)
         size = i + 1
 
-        return cls(
-            node_feats, coords, batch_index=batch_index, size=size, device_=P.device
-        )
+        return cls(node_feats, coords, batch_index=batch_index, size=size, device_=P.device)
 
     def _build_field_info(self) -> list[str]:
         return [
