@@ -24,7 +24,7 @@ class Sum(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H = scatter_sum(G.V, G.batch_node_index, dim=0, dim_size=len(G))
+        H = scatter_sum(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
         return H
 
@@ -33,7 +33,7 @@ class Mean(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H = scatter_mean(G.V, G.batch_node_index, dim=0, dim_size=len(G))
+        H = scatter_mean(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
         return H
 
@@ -42,7 +42,7 @@ class Max(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H, _ = scatter_max(G.V, G.batch_node_index, dim=0, dim_size=len(G))
+        H, _ = scatter_max(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
         return H
 
@@ -56,9 +56,9 @@ class Gated(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        scores = self.a(G.V)
+        scores = self.a(G.node_feats)
         alpha = scatter_softmax(scores, G.batch_node_index, dim=0, dim_size=len(G)).unsqueeze(1)
-        H = scatter_sum(alpha * G.V, G.batch_node_index, dim=0, dim_size=len(G))
+        H = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
         return H
 
@@ -76,8 +76,11 @@ class SDPAttention(Aggregation):
         Q: Float[Tensor, "b d_v"],
         **kwargs,
     ) -> Float[Tensor, "b d_v"]:
-        scores = torch.einsum("V d_v, V d_v -> V", Q[G.batch_node_index], G.V) / self.sqrt_key_dim
+        scores = (
+            torch.einsum("V d_v, V d_v -> V", Q[G.batch_node_index], G.node_feats)
+            / self.sqrt_key_dim
+        )
         alpha = scatter_softmax(scores, G.batch_node_index, dim=0, dim_size=len(G)).unsqueeze(1)
-        H = scatter_sum(alpha * G.V, G.batch_node_index, dim=0, dim_size=len(G))
+        H = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
         return H

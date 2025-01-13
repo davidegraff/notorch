@@ -14,14 +14,14 @@ class RBFEmbedding(nn.Module):
         width = (d_min - d_max) / num_bases
 
         self.register_buffer("means", means.unsqueeze(0))
-        self.width = 0.5 * 1 / width**2
+        self.width = 0.5 / width**2
 
     @property
     def num_bases(self) -> int:
         return self.means.shape[1]
 
-    def forward(self, D: Float[Tensor, "b"]) -> Float[Tensor, "b n_bases"]:
-        diffs = D.unsqueeze(-1) - self.means
+    def forward(self, dists: Float[Tensor, "b"]) -> Float[Tensor, "b n_bases"]:
+        diffs = dists.unsqueeze(-1) - self.means
 
         return torch.exp(-self.factor *  diffs**2)
 

@@ -14,13 +14,13 @@ from notorch.conf import REPR_INDENT
 class Graph:
     """A :class:`Graph` represents the feature representation of graph."""
 
-    V: Int[Tensor, "V t_v"]
+    node_feats: Int[Tensor, "V t_v"]
     """a tensor of shape ``|V| x t_v`` containing the vertex types/features of the graph"""
-    E: Int[Tensor, "E t_e"]
+    edge_feats: Int[Tensor, "E t_e"]
     """a tensor of shape ``|E| x t_e`` containing the edge types/features of the graph"""
     edge_index: Int[Tensor, "2 E"]
     """a tensor of shape ``2 x E`` containing the edges of the graph in COO format"""
-    rev_index: Int[Tensor, "E"]
+    rev_index: Int[Tensor, "edge_feats"]
     """a tensor of shape ``E`` that maps from an edge index to the index of the source of the
     reverse edge in :attr:`edge_index` attribute."""
     device_: InitVar[Device] = field(default=None, kw_only=True)
@@ -31,11 +31,11 @@ class Graph:
 
     @property
     def num_nodes(self) -> int:
-        return len(self.V)
+        return len(self.node_feats)
 
     @property
     def num_edges(self) -> int:
-        return len(self.E)
+        return len(self.edge_feats)
 
     @property
     def device(self) -> Device:
@@ -44,8 +44,8 @@ class Graph:
     def to(self, device: Device) -> Self:
         self.__device = device
 
-        self.V = self.V.to(device)
-        self.E = self.E.to(device)
+        self.node_feats = self.node_feats.to(device)
+        self.edge_feats = self.edge_feats.to(device)
         self.edge_index = self.edge_index.to(device)
         self.rev_index = self.rev_index.to(device)
 
@@ -54,7 +54,7 @@ class Graph:
     @property
     def A(self) -> Int[Tensor, "V V"]:
         """The dense adjacency matrix."""
-        num_nodes = self.V.shape[0]
+        num_nodes = self.node_feats.shape[0]
         src, dest = self.edge_index.unbind(0)
 
         A = torch.zeros(num_nodes, num_nodes)
@@ -84,7 +84,7 @@ class Graph:
             G.E[sparse_edge_index].shape
             # (2, d)
         """
-        num_nodes = self.V.shape[0]
+        num_nodes = self.node_feats.shape[0]
         src, dest = self.edge_index.unbind(0)
 
         index = -torch.ones(num_nodes, num_nodes, dtype=torch.long)
@@ -123,7 +123,7 @@ class Graph:
             a tensor of shape ``n x w x l`` containing the ID of each edge in the walk if
             :attr:`return_edge_ids` is ``True``. Otherwise, ``None``
         """
-        num_nodes = len(self.V)
+        num_nodes = len(self.node_feats)
 
         if starting_nodes is None:
             starting_nodes = torch.arange(num_nodes)
@@ -156,8 +156,8 @@ class Graph:
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"V: Tensor(shape={self.V.shape})",
-            f"E: Tensor(shape={self.E.shape})",
+            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"edge_feats: Tensor(shape={self.edge_feats.shape})",
             f"device={self.__device}",
             "",
         ]
@@ -184,8 +184,8 @@ class BatchedGraph(Graph):
 
     @classmethod
     def from_graphs(cls, Gs: Iterable[Graph]):
-        Vs = []
-        Es = []
+        node_featss = []
+        edge_featss = []
         edge_indices = []
         rev_indices = []
         batch_node_indices = []
@@ -193,17 +193,17 @@ class BatchedGraph(Graph):
         offset = 0
 
         for i, G in enumerate(Gs):
-            Vs.append(G.V)
-            Es.append(G.E)
+            node_featss.append(G.node_feats)
+            edge_featss.append(G.edge_feats)
             edge_indices.append(G.edge_index + offset)
             rev_indices.append(G.rev_index + offset)
-            batch_node_indices.extend([i] * len(G.V))
-            batch_edge_indices.extend([i] * len(G.E))
+            batch_node_indices.extend([i] * len(G.node_feats))
+            batch_edge_indices.extend([i] * len(G.edge_feats))
 
-            offset += len(G.V)
+            offset += len(G.node_feats)
 
-        V = torch.cat(Vs, dim=0)
-        E = torch.cat(Es, dim=0)
+        node_feats = torch.cat(node_featss, dim=0)
+        edge_feats = torch.cat(edge_featss, dim=0)
         edge_index = torch.cat(edge_indices, dim=1).long()
         rev_index = torch.cat(rev_indices, dim=0).long()
         batch_node_index = torch.tensor(batch_node_indices, dtype=torch.long)
@@ -211,8 +211,8 @@ class BatchedGraph(Graph):
         size = i + 1
 
         return cls(
-            V,
-            E,
+            node_feats,
+            edge_feats,
             edge_index,
             rev_index,
             device_=G.device,
@@ -228,8 +228,8 @@ class BatchedGraph(Graph):
     def to(self, device: Device) -> Self:
         self.__device = device
 
-        self.V = self.V.to(device)
-        self.E = self.E.to(device)
+        self.node_feats = self.node_feats.to(device)
+        self.edge_feats = self.edge_feats.to(device)
         self.edge_index = self.edge_index.to(device)
         self.rev_index = self.rev_index.to(device)
         self.batch_node_index = self.batch_node_index.to(device)
@@ -239,8 +239,8 @@ class BatchedGraph(Graph):
 
     def _build_field_info(self) -> list[str]:
         return [
-            f"V: Tensor(shape={self.V.shape})",
-            f"E: Tensor(shape={self.E.shape})",
+            f"node_feats: Tensor(shape={self.node_feats.shape})",
+            f"edge_feats: Tensor(shape={self.edge_feats.shape})",
             f"device={self.__device}",
             f"batch_size={len(self)}" "",
         ]

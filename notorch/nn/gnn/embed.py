@@ -24,8 +24,8 @@ class GraphEmbedding(nn.Module):
 
     def forward(self, G: Graph) -> Graph:
         G_emb = copy(G)
-        G_emb.V = self.node(G_emb.V)
-        G_emb.E = self.edge(G_emb.E)
+        G_emb.node_feats = self.node(G_emb.node_feats)
+        G_emb.edge_feats = self.edge(G_emb.edge_feats)
 
         return G_emb
 
