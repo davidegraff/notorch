@@ -14,21 +14,19 @@ from notorch.nn.residual import Residual
 class ContinuousFilterConvolution(nn.Module):
     def __init__(
         self,
-        radius: float,
-        d_min: float,
-        d_max: float,
-        num_bases: int,
-        hidden_dim: int,
+        d_min: float = 0,
+        d_max: float = 4.5,
+        num_bases: int = 16,
+        hidden_dim: int = 128,
+        radius: float = 5.0,
         act: type[nn.Module] = nn.ReLU,
     ):
         super().__init__()
 
-        rbf = RBFEmbedding(d_min, d_max, num_bases)
-
         self.radius = radius
         self.W = nn.Sequential(
-            rbf,
-            nn.Linear(rbf.num_bases, hidden_dim, bias=False),
+            RBFEmbedding(d_min, d_max, num_bases),
+            nn.Linear(num_bases, hidden_dim, bias=False),
             act(),
             nn.Linear(hidden_dim, hidden_dim, bias=False),
             act(),
@@ -54,11 +52,11 @@ class ContinuousFilterConvolution(nn.Module):
 class InteractionLayer(nn.Module):
     def __init__(
         self,
-        hidden_dim: int,
-        d_min: float,
-        d_max: float,
-        num_bases: int,
-        radius: float,
+        hidden_dim: int = 128,
+        d_min: float = 0,
+        d_max: float = 4.5,
+        num_bases: int = 16,
+        radius: float = 5.0,
         act: type[nn.Module] = nn.ReLU,
     ):
         super().__init__()
@@ -75,20 +73,20 @@ class InteractionLayer(nn.Module):
         coords: Float[Tensor, "V d_r"],
         batch_index: Int[Tensor, "V"],
     ) -> Float[Tensor, "V d_h"]:
-        H = self.W(node_feats)
-        H = self.cfconv(node_feats, coords, batch_index)
-        V = self.update(H)
+        node_hiddens = self.W(node_feats)
+        node_hiddens = self.cfconv(node_hiddens, coords, batch_index)
+        node_hiddens = self.update(node_hiddens)
 
-        return V
+        return node_hiddens
 
 
 class SchnetBlock(nn.Module):
     def __init__(
         self,
-        hidden_dim: int,
-        d_min: float,
-        d_max: float,
-        num_bases: int,
+        hidden_dim: int = 128,
+        d_min: float = 0,
+        d_max: float = 4.5,
+        num_bases: int = 16,
         radii: Iterable[float] = (5.0, 5.0, 5.0),
         act: type[nn.Module] = nn.ReLU,
     ):
