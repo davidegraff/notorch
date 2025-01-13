@@ -8,6 +8,7 @@ from torch_cluster import radius_graph
 
 from notorch.data.models.gvp import DualRankFeatures
 from notorch.nn.rbf import RBFEmbedding
+from notorch.nn.residual import Residual
 from notorch.nn.spatial.gvp.layers import Aggregation, Dropout, GatedGVP, LayerNorm
 from notorch.types import Reduction
 
@@ -52,7 +53,9 @@ class MessageFunction(nn.Module):
         message_in_dims = (2 * scalar_in_dim + scalar_edge_dim, 2 * vect_in_dim + vect_edge_dim)
 
         gvps = []
-        if num_layers == 1:
+        if num_layers <= 0:
+            raise ValueError(f"arg 'num_layers' must be greater than 0! got: {num_layers}.")
+        elif num_layers == 1:
             gvps = [GatedGVP(message_in_dims, out_dims, activations=(None, None))]
         else:
             gvps = (
@@ -117,18 +120,17 @@ class GVPConv(nn.Module):
         _, dest = edge_index.unbind(0)
 
         messages = self.dropout(self.message(node_feats, edge_feats, edge_index))
-        agg_messages = DualRankFeatures(self.agg(messages, dest))
+        agg_messages = DualRankFeatures(*self.agg(messages, dest))
         hiddens = node_feats + agg_messages
-        outputs = self.layer_norm((hiddens["scalar_feats"], hiddens["vector_feats"]))
+        outputs = self.layer_norm(hiddens.values())
 
         return outputs
 
 
-class GVPGNNLayer(nn.Module):
+class GvpGNNLayer(nn.Module):
     conv: GVPConv
     update: GatedGVP
     dropout: Dropout
-    layer_norm: LayerNorm
 
     def __init__(
         self,
@@ -141,8 +143,9 @@ class GVPGNNLayer(nn.Module):
         dropout: float = 0.1,
         reduce: Reduction = "mean",
     ):
-        gvps = []
-        if num_update_layers == 1:
+        if num_update_layers <= 0:
+            gvps = [nn.Identity()]
+        elif num_update_layers == 1:
             gvps = [GatedGVP(node_dims, node_dims, activations=(None, None))]
         else:
             scalar_dim, vector_dim = node_dims
@@ -161,7 +164,6 @@ class GVPGNNLayer(nn.Module):
         )
         self.update = nn.Sequential(*gvps)
         self.dropout = Dropout(dropout)
-        self.layer_norm = LayerNorm(node_dims)
 
     def forward(
         self,
@@ -170,7 +172,50 @@ class GVPGNNLayer(nn.Module):
         batch_index: Int[Tensor, "V"],
     ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
         node_feats = self.conv(node_feats, coords, batch_index)
-        node_feats = node_feats + self.dropout(self.update(node_feats))
-        node_feats = self.layer_norm(node_feats)
+        node_feats = DualRankFeatures(self.dropout(self.update(node_feats)))
+
+        return node_feats
+
+
+class GvpGNNBlock(nn.Module):
+    layers: list[GvpGNNLayer]
+
+    def __init__(
+        self,
+        node_dims: tuple[int, int],
+        radius: float = 4.5,
+        edge_embed: EdgeEmbed | None = None,
+        num_message_layers: int = 3,
+        num_update_layers: int = 2,
+        activations: tuple[type[nn.Module] | None, type[nn.Module] | None] = (nn.ReLU, None),
+        dropout: float = 0.1,
+        reduce: Reduction = "mean",
+        num_gnn_layers: int = 5,
+    ):
+        layers = [
+            GvpGNNLayer(
+                node_dims,
+                radius,
+                edge_embed,
+                num_message_layers,
+                num_update_layers,
+                activations,
+                dropout,
+                reduce,
+            )
+            for _ in range(num_gnn_layers)
+        ]
+        layers = [nn.Sequential(Residual(layer), LayerNorm(node_dims)) for layer in layers]
+
+        self.layers = nn.ModuleList(layers)
+
+    def forward(
+        self,
+        node_feats: DualRankFeatures,
+        coords: Float[Tensor, "V r"],
+        batch_index: Int[Tensor, "V"],
+    ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
+        for layer in self.layers:
+            node_feats = layer(node_feats, coords, batch_index)
 
         return node_feats
