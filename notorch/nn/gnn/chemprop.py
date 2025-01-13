@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from copy import copy
-
 from jaxtyping import Float, Int
 from torch import Tensor
 import torch.nn as nn
 from torch_scatter import scatter
 
-from notorch.data.models.graph import Graph
+from notorch.data.models.graph import BatchedGraph, Graph
 from notorch.nn.residual import Residual
 from notorch.types import Reduction
 
@@ -80,14 +78,11 @@ class ChempropBlock(nn.Module):
     def depth(self) -> int:
         return len(self.layers)
 
-    def forward(self, G: Graph) -> Graph:
+    def forward[T: (Graph | BatchedGraph)](self, G: T) -> T:
         src, dest = G.edge_index.unbind(0)
-        E = G.node_feats[src] + G.edge_feats
+        edge_hiddens = G.node_feats[src] + G.edge_feats
         for layer in self.layers:
-            E = layer(E, G.node_feats, G.edge_index, G.rev_index)
+            edge_hiddens = layer(edge_hiddens, G.node_feats, G.edge_index, G.rev_index)
+        node_hiddens = scatter(edge_hiddens, dest, dim=0, dim_size=G.num_nodes, reduce=self.reduce)
 
-        G_t = copy(G)
-        G_t.node_feats = scatter(E, dest, dim=0, dim_size=G.num_nodes, reduce=self.reduce)
-        G_t.edge_feats = E
-
-        return G_t
+        return G.update(node_feats=node_hiddens, edge_feats=edge_hiddens)

@@ -36,7 +36,7 @@ class ContinuousFilterConvolution(nn.Module):
         self,
         node_feats: Float[Tensor, "V d_h"],
         coords: Float[Tensor, "V d_r"],
-        batch_index: Int[Tensor, "V"],
+        batch_index: Int[Tensor, "V"] | None,
     ) -> Float[Tensor, "V d_h"]:
         src, dest = radius_graph(coords, self.radius, batch_index).unbind(0)
         D_ij = (coords[src] - coords[dest]).norm(p=2, dim=-1)
@@ -71,7 +71,7 @@ class InteractionLayer(nn.Module):
         self,
         node_feats: Float[Tensor, "V d_h"],
         coords: Float[Tensor, "V d_r"],
-        batch_index: Int[Tensor, "V"],
+        batch_index: Int[Tensor, "V"] | None,
     ) -> Float[Tensor, "V d_h"]:
         node_hiddens = self.W(node_feats)
         node_hiddens = self.cfconv(node_hiddens, coords, batch_index)
@@ -103,6 +103,4 @@ class SchnetBlock(nn.Module):
         for layer in self.layers:
             node_feats = layer(node_feats, P.coords, P.batch_index)
 
-        return BatchedPointCloud(
-            node_feats, P.coords, batch_index=P.batch_index, size=len(P), device_=P.device
-        )
+        return P.update(node_feats=node_feats)

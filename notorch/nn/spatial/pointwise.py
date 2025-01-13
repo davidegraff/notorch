@@ -3,7 +3,7 @@ from copy import copy
 import torch.nn as nn
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
-from notorch.data.models.point_cloud import PointCloud
+from notorch.data.models.point_cloud import BatchedPointCloud, PointCloud
 
 
 class PointwiseEmbed(nn.Module):
@@ -27,8 +27,6 @@ class Pointwise(nn.Module):
 
         self.module = module
 
-    def forward(self, P: PointCloud) -> PointCloud:
-        P_emb = copy(P)
-        P_emb.node_feats = self.module(P_emb.node_feats)
+    def forward[T: (PointCloud, BatchedPointCloud)](self, P: T) -> T:
+        return P.update(node_feats=self.module(P.node_feats))
 
-        return P_emb

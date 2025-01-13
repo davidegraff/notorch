@@ -1,3 +1,4 @@
+from copy import copy
 from dataclasses import InitVar, dataclass, field
 import textwrap
 from typing import Iterable, Self
@@ -8,10 +9,11 @@ from torch import Tensor
 from torch.types import Device
 
 from notorch.conf import REPR_INDENT
+from notorch.utils.utils import UpdateMixin
 
 
 @dataclass(repr=False, eq=False)
-class Graph:
+class Graph(UpdateMixin):
     """A :class:`Graph` represents the feature representation of graph."""
 
     node_feats: Int[Tensor, "V t_v"]
