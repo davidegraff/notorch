@@ -5,10 +5,11 @@ import torch.linalg as LA
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_cluster import radius_graph
-from torch_scatter import scatter_mean
 
+from notorch.data.models.gvp import DualRankFeatures
 from notorch.nn.rbf import RBFEmbedding
-from notorch.nn.spatial.gvp.layers import Dropout, GatedGVP, LayerNorm
+from notorch.nn.spatial.gvp.layers import Aggregation, Dropout, GatedGVP, LayerNorm
+from notorch.types import Reduction
 
 
 class EdgeEmbed(nn.Module):
@@ -23,16 +24,16 @@ class EdgeEmbed(nn.Module):
 
     def forward(
         self, coords: Float[Tensor, "V r"], edge_index: Int[Tensor, "2 E"]
-    ) -> tuple[Float[Tensor, "E num_bases"], Float[Tensor, "E r 1"]]:
+    ) -> Float[DualRankFeatures, "E num_bases", "E r 1"]:
         src, dest = edge_index.unbind(0)
         r_ij = coords[dest] - coords[src]
         d_ij = LA.vector_norm(r_ij, p=2, dim=-1)
         r_ij_norm = F.normalize(r_ij, dim=-1)
 
-        s_e = self.rbf(d_ij)
-        V_e = r_ij_norm.unsqueeze(-1)
+        scalar_feats = self.rbf(d_ij)
+        vector_feats = r_ij_norm.unsqueeze(-1)
 
-        return s_e, V_e
+        return DualRankFeatures(scalar_feats, vector_feats)
 
 
 class MessageFunction(nn.Module):
@@ -40,90 +41,136 @@ class MessageFunction(nn.Module):
         self,
         in_dims: tuple[int, int],
         out_dims: tuple[int, int],
-        edge_embed: EdgeEmbed,
-        n_layers: int = 3,
+        edge_dims: tuple[int, int],
+        num_layers: int = 3,
         activations: tuple[type[nn.Module], type[nn.Module] | None] = (nn.ReLU, None),
-        radius: float = 5,
     ):
         super().__init__()
 
         scalar_in_dim, vect_in_dim = in_dims
-        scalar_edge_dim, vect_edge_dim = edge_embed.out_dims
+        scalar_edge_dim, vect_edge_dim = edge_dims
         message_in_dims = (2 * scalar_in_dim + scalar_edge_dim, 2 * vect_in_dim + vect_edge_dim)
 
-        modules = []
-        if n_layers == 1:
-            modules = [GatedGVP(message_in_dims, out_dims, activations=(None, None))]
+        gvps = []
+        if num_layers == 1:
+            gvps = [GatedGVP(message_in_dims, out_dims, activations=(None, None))]
         else:
-            modules = (
+            gvps = (
                 [GatedGVP(message_in_dims, out_dims)]
                 + [
                     GatedGVP(out_dims, out_dims, activations=activations)
-                    for _ in range(n_layers - 2)
+                    for _ in range(num_layers - 2)
                 ]
                 + [GatedGVP(out_dims, out_dims, activations=(None, None))]
             )
 
-        self.edge_embed = edge_embed
-        self.radius = radius
-        self.mlp = nn.Sequential(*modules)
+        self.gvp = nn.Sequential(*gvps)
 
     def forward(
         self,
-        node_feats: tuple[Float[Tensor, "V d_s_in"], Float[Tensor, "V r d_v_in"]],
-        edge_feats: tuple[Float[Tensor, "E d_s_in"], Float[Tensor, "E r d_v_in"]],
+        node_feats: Float[DualRankFeatures, "V d_s_in", "V r d_v_in"],
+        edge_feats: Float[DualRankFeatures, "E d_s_in", "E r d_v_in"],
         edge_index: Int[Tensor, "2 E"],
     ) -> tuple[Float[Tensor, "E d_s_out"], Float[Tensor, "E  r d_v_out"]]:
-        s, V = node_feats
-        s_ij, V_ij = edge_feats
+        s, V = node_feats.scalar_feats, node_feats.vector_feats
+        s_ij, V_ij = edge_feats.scalar_feats, edge_feats.vector_feats
         src, dest = edge_index.unbind(0)
 
         s = torch.cat([s[src], s[dest], s_ij], dim=-1)
         V = torch.cat([V[src], V[dest], V_ij], dim=-1)
 
-        return self.mlp((s, V))
+        return self.gvp((s, V))
 
 
 class GVPConv(nn.Module):
-    edge_embed: EdgeEmbed
-    message: MessageFunction
-    dropout: Dropout
-    layer_norm: LayerNorm
-    radius: float
+    def __init__(
+        self,
+        node_dims: tuple[int, int],
+        radius: float = 4.5,
+        edge_embed: EdgeEmbed | None = None,
+        num_message_layers: int = 3,
+        activations: tuple[type[nn.Module] | None, type[nn.Module] | None] = (nn.ReLU, None),
+        dropout: float = 0.1,
+        reduce: Reduction = "mean",
+    ):
+        edge_embed = edge_embed or EdgeEmbed()
+        message = MessageFunction(
+            node_dims, node_dims, edge_embed.out_dims, num_message_layers, activations, radius
+        )
+
+        self.edge_embed = edge_embed
+        self.message = message
+        self.radius = radius
+        self.message = MessageFunction()
+        self.dropout = Dropout(dropout)
+        self.agg = Aggregation(reduce)
+        self.layer_norm = LayerNorm(node_dims)
 
     def forward(
         self,
-        node_feats: tuple[Float[Tensor, "V d_s"], Float[Tensor, "V r d_v"]],
+        node_feats: Float[DualRankFeatures, "V d_s_in", "V r d_v_in"],
         coords: Float[Tensor, "V r"],
         batch_index: Int[Tensor, "V"],
     ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
         edge_index = radius_graph(coords, self.radius, batch_index)
-        src, dest = edge_index.unbind(0)
         edge_feats = self.edge_embed(coords, edge_index)
+        _, dest = edge_index.unbind(0)
 
-        m_s_ij, m_V_ij = self.dropout(self.message(node_feats, edge_feats, edge_index))
-        m_s = scatter_mean(m_s_ij, dest, dim=0, dim_size=len(s))
-        m_V = scatter_mean(m_V_ij, dest, dim=0, dim_size=len(V))
+        messages = self.dropout(self.message(node_feats, edge_feats, edge_index))
+        agg_messages = DualRankFeatures(self.agg(messages, dest))
+        hiddens = node_feats + agg_messages
+        outputs = self.layer_norm((hiddens["scalar_feats"], hiddens["vector_feats"]))
 
-        s, V = node_feats
-        h_s = s + m_s
-        h_v = V + m_V
-        out = (h_s, h_v)
-
-        return self.layer_norm(out)
+        return outputs
 
 
 class GVPGNNLayer(nn.Module):
     conv: GVPConv
     update: GatedGVP
     dropout: Dropout
+    layer_norm: LayerNorm
+
+    def __init__(
+        self,
+        node_dims: tuple[int, int],
+        radius: float = 4.5,
+        edge_embed: EdgeEmbed | None = None,
+        num_message_layers: int = 3,
+        num_update_layers: int = 2,
+        activations: tuple[type[nn.Module] | None, type[nn.Module] | None] = (nn.ReLU, None),
+        dropout: float = 0.1,
+        reduce: Reduction = "mean",
+    ):
+        gvps = []
+        if num_update_layers == 1:
+            gvps = [GatedGVP(node_dims, node_dims, activations=(None, None))]
+        else:
+            scalar_dim, vector_dim = node_dims
+            hidden_dims = (4 * scalar_dim, 2 * vector_dim)
+            gvps = (
+                [GatedGVP(node_dims, hidden_dims)]
+                + [
+                    GatedGVP(hidden_dims, hidden_dims, activations=activations)
+                    for _ in range(num_update_layers - 2)
+                ]
+                + [GatedGVP(hidden_dims, node_dims, activations=(None, None))]
+            )
+
+        self.conv = GVPConv(
+            node_dims, radius, edge_embed, num_message_layers, activations, dropout, reduce
+        )
+        self.update = nn.Sequential(*gvps)
+        self.dropout = Dropout(dropout)
+        self.layer_norm = LayerNorm(node_dims)
 
     def forward(
         self,
-        node_feats: tuple[Float[Tensor, "V d_s"], Float[Tensor, "V r d_v"]],
+        node_feats: DualRankFeatures,
         coords: Float[Tensor, "V r"],
         batch_index: Int[Tensor, "V"],
     ) -> tuple[Float[Tensor, "V d_s_out"], Float[Tensor, "V r d_v_out"]]:
         node_feats = self.conv(node_feats, coords, batch_index)
-        node_feats = self.dropout(self.update(node_feats))
-    
+        node_feats = node_feats + self.dropout(self.update(node_feats))
+        node_feats = self.layer_norm(node_feats)
+
+        return node_feats

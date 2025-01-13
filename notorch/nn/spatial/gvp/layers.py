@@ -1,8 +1,11 @@
-from jaxtyping import Float
+from jaxtyping import Float, Int
 import torch
 from torch import Tensor
 import torch.linalg as LA
 import torch.nn as nn
+from torch_scatter import scatter
+
+from notorch.types import Reduction
 
 
 class GeometricVectorPerceptron(nn.Module):
@@ -158,6 +161,24 @@ class LayerNorm(nn.Module):
         s, V = inputs
 
         return self.scalar_ln(s), V
+
+
+class Aggregation(nn.Module):
+    def __init__(self, reduce: Reduction = "mean"):
+        super().__init__()
+
+        self.reduce = reduce
+
+    def forward(
+        self,
+        inputs: tuple[Float[Tensor, "n d_s"], Float[Tensor, "n r d_v"]],
+        index: Int[Tensor, "n"],
+    ) -> tuple[Float[Tensor, "m d_s"], Float[Tensor, "m r d_v"]]:
+        s, V = inputs
+        s_agg = scatter(s, index, dim=0, dim_size=len(s), reduce=self.reduce)
+        V_agg = scatter(V, index, dim=0, dim_size=len(V), reduce=self.reduce)
+
+        return s_agg, V_agg
 
 
 GVP = GeometricVectorPerceptron

@@ -1,12 +1,8 @@
-from typing import Literal
-
 from torch import einsum, nn
 from torch_scatter import scatter, scatter_softmax
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
 from notorch.data.models.graph import Graph
-
-Reduction = Literal["mean", "sum", "min", "max"]
 
 
 class GATv2Layer(nn.Module):
