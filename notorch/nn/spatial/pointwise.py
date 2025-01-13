@@ -29,4 +29,3 @@ class Pointwise(nn.Module):
 
     def forward[T: (PointCloud, BatchedPointCloud)](self, P: T) -> T:
         return P.update(node_feats=self.module(P.node_feats))
-
