@@ -24,27 +24,27 @@ class Sum(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H = scatter_sum(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
+        hiddens = scatter_sum(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
-        return H
+        return hiddens
 
 
 class Mean(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H = scatter_mean(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
+        hiddens = scatter_mean(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
-        return H
+        return hiddens
 
 
 class Max(Aggregation):
     def forward(
         self, G: Annotated[BatchedGraph, "(V d_v) (E d_e) b"], **kwargs
     ) -> Float[Tensor, "b d_v"]:
-        H, _ = scatter_max(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
+        hiddens, _ = scatter_max(G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
-        return H
+        return hiddens
 
 
 class Gated(Aggregation):
@@ -58,9 +58,9 @@ class Gated(Aggregation):
     ) -> Float[Tensor, "b d_v"]:
         scores = self.a(G.node_feats)
         alpha = scatter_softmax(scores, G.batch_node_index, dim=0, dim_size=len(G)).unsqueeze(1)
-        H = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
+        hiddens = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
-        return H
+        return hiddens
 
 
 class SDPAttention(Aggregation):
@@ -81,6 +81,6 @@ class SDPAttention(Aggregation):
             / self.sqrt_key_dim
         )
         alpha = scatter_softmax(scores, G.batch_node_index, dim=0, dim_size=len(G)).unsqueeze(1)
-        H = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
+        hiddens = scatter_sum(alpha * G.node_feats, G.batch_node_index, dim=0, dim_size=len(G))
 
-        return H
+        return hiddens
