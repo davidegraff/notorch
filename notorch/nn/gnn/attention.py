@@ -1,5 +1,5 @@
 from jaxtyping import Float, Int
-from torch import einsum, nn, Tensor
+from torch import Tensor, einsum, nn
 from torch_scatter import scatter, scatter_softmax
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
