@@ -42,9 +42,7 @@ class GatedEquivariantBlock(nn.Module):
         self.W_u = nn.Linear(vector_in_dim, scalar_in_dim, bias=False)
         self.W_v = nn.Linear(vector_in_dim, vector_out_dim, bias=False)
         self.W_s = nn.Sequential(
-            nn.Linear(2 * scalar_in_dim, hidden_dim),
-            act(),
-            nn.Linear(hidden_dim, sum(out_dims)),
+            nn.Linear(2 * scalar_in_dim, hidden_dim), act(), nn.Linear(hidden_dim, sum(out_dims))
         )
 
     def forward(
