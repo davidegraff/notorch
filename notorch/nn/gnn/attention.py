@@ -1,8 +1,8 @@
-from torch import einsum, nn
+from jaxtyping import Float, Int
+from torch import einsum, nn, Tensor
 from torch_scatter import scatter, scatter_softmax
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
-from notorch.data.models.graph import Graph
 
 
 class GATv2Layer(nn.Module):
@@ -16,23 +16,27 @@ class GATv2Layer(nn.Module):
         self.W_q = nn.Linear(input_dim, output_dim)
         self.W_k = nn.Linear(input_dim, output_dim)
         self.W_v = nn.Linear(input_dim, output_dim)
-        self.update = nn.Linear(input_dim, output_dim)
         self.act = nn.LeakyReLU(slope)
         self.a = nn.Linear(output_dim, 1)
 
-    def forward(self, G: Graph) -> Graph:
-        src, dest = G.edge_index
+    def forward(
+        self,
+        node_feats: Float[Tensor, "V d_v"],
+        edge_feats: Float[Tensor, "E d_e"],
+        edge_index: Int[Tensor, "2 E"],
+    ) -> Float[Tensor, "V d_o"]:
+        src, dest = edge_index.unbind(0)
 
-        Q = self.W_q(G.V[src])
-        K = self.W_k(G.V[dest])
-        V = self.W_v(G.V[dest])
-        bias = self.W_e(G.E)
+        Q = self.W_q(node_feats[src])
+        K = self.W_k(node_feats[dest])
+        V = self.W_v(node_feats[dest])
+        bias = self.W_e(edge_feats)
 
         scores = self.a(self.act(Q + K + bias))
         alpha = scatter_softmax(scores, dest, dim=0)
-        H = scatter(alpha * V, dest, dim=0, dim_size=G.num_nodes, reduce="sum")
+        node_hiddens = scatter(alpha * V, dest, dim=0, dim_size=len(node_feats), reduce="sum")
 
-        return Graph(H, G.E, G.edge_index, G.rev_index)
+        return node_hiddens
 
 
 class MultiheadedSelfAttentionLayer(nn.Module):
@@ -49,7 +53,7 @@ class MultiheadedSelfAttentionLayer(nn.Module):
         super().__init__()
 
         embed_dim = node_dim if embed_dim is None else embed_dim
-        output_dim = embed_dim if output_dim is None else output_dim
+        output_dim = node_dim if output_dim is None else output_dim
 
         head_dim, r = divmod(embed_dim, num_heads)
         if r != 0:
@@ -69,17 +73,22 @@ class MultiheadedSelfAttentionLayer(nn.Module):
         )
         self.W_o = nn.Sequential(nn.Flatten(-2, -1), nn.Linear(embed_dim, output_dim))
 
-    def forward(self, G: Graph) -> Graph:
-        src, dest = G.edge_index
+    def forward(
+        self,
+        node_feats: Float[Tensor, "V d_v"],
+        edge_feats: Float[Tensor, "E d_e"],
+        edge_index: Int[Tensor, "2 E"],
+    ) -> Float[Tensor, "V d_o"]:
+        src, dest = edge_index.unbind(0)
 
-        Q = self.W_q(G.V[src])
-        K = self.W_k(G.V[dest])
-        V = self.W_v(G.V[dest])  # (E, h, d)
-        bias = self.bias(G.E)
+        Q = self.W_q(node_feats[src])
+        K = self.W_k(node_feats[dest])
+        V = self.W_v(node_feats[dest])  # (E, h, d)
+        bias = self.bias(edge_feats)
 
         scores = einsum("Ehd,Ehd->Eh", Q, K) / self.sqrt_dk + bias
         alpha = scatter_softmax(scores, dest, dim=0).unsqueeze(-1)
-        H = scatter(alpha * V, dest, dim=0, dim_size=G.num_nodes, reduce="sum")
-        O = self.W_o(H)
+        H = scatter(alpha * V, dest, dim=0, dim_size=len(node_feats), reduce="sum")
+        node_hiddens = self.W_o(H)
 
-        return Graph(O, G.E, G.edge_index, G.rev_index)
+        return node_hiddens

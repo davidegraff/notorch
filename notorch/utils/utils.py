@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 from enum import StrEnum
 from typing import Iterator, Self
 
@@ -28,3 +29,12 @@ class EnumMapping(StrEnum):
     @classmethod
     def items(cls) -> Iterator[tuple[str, str]]:
         return zip(cls.keys(), cls.values())
+
+
+class UpdateMixin:
+    def update(self, in_place: bool = False, **kwargs) -> Self:
+        other = self if in_place else copy(self)
+        for key, val in kwargs:
+            setattr(other, key, val)
+
+        return other

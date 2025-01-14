@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from copy import copy
-
 import torch.nn as nn
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
@@ -23,11 +21,7 @@ class GraphEmbedding(nn.Module):
         self.edge = nn.EmbeddingBag(num_edge_types, hidden_dim, mode="sum")
 
     def forward(self, G: Graph) -> Graph:
-        G_emb = copy(G)
-        G_emb.V = self.node(G_emb.V)
-        G_emb.E = self.edge(G_emb.E)
-
-        return G_emb
+        return G.update(node_feats=self.node(G.node_feats), edge_feats=self.edge(G.edge_feats))
 
     @property
     def num_node_types(self) -> int:

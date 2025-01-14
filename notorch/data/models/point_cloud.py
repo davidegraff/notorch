@@ -10,10 +10,11 @@ from torch import Tensor
 from torch.types import Device
 
 from notorch.conf import REPR_INDENT
+from notorch.utils.utils import UpdateMixin
 
 
 @dataclass(repr=False, eq=False)
-class PointCloud:
+class PointCloud(UpdateMixin):
     node_feats: Num[Tensor, "V t"]
     """a tensor of shape ``V x t`` containing the node types/features."""
     coords: Float[Tensor, "V r"]

@@ -3,8 +3,7 @@ from copy import copy
 import torch.nn as nn
 
 from notorch.conf import DEFAULT_HIDDEN_DIM
-from notorch.data.models.point_cloud import PointCloud
-from notorch.nn.mlp import MLP
+from notorch.data.models.point_cloud import BatchedPointCloud, PointCloud
 
 
 class PointwiseEmbed(nn.Module):
@@ -20,21 +19,13 @@ class PointwiseEmbed(nn.Module):
         return P_emb
 
 
-class PointwiseMLP(nn.Module):
-    """Apply an MLP to each point.
+class Pointwise(nn.Module):
+    """Apply a module to the node features."""
 
-    Parameters
-    ----------
-    *args, **kwargs
-        positional and keyword arguments to supply to :func:`notorch.nn.mlp.MLP`
-    """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, module: nn.Module):
         super().__init__()
 
-        self.mlp = MLP(*args, **kwargs)
+        self.module = module
 
-    def forward(self, P: PointCloud) -> PointCloud:
-        P_emb = copy(P)
-        P_emb.node_feats = self.mlp(P_emb.node_feats)
-
-        return P_emb
+    def forward[T: (PointCloud, BatchedPointCloud)](self, P: T) -> T:
+        return P.update(node_feats=self.module(P.node_feats))

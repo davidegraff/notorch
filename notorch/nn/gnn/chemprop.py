@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from copy import copy
-
+from jaxtyping import Float, Int
+from torch import Tensor
 import torch.nn as nn
 from torch_scatter import scatter
 
-from notorch.data.models.graph import Graph
+from notorch.data.models.graph import BatchedGraph, Graph
 from notorch.nn.residual import Residual
 from notorch.types import Reduction
 
@@ -22,33 +22,25 @@ class ChempropLayer(nn.Module):
         super().__init__()
 
         self.act = act()
-        self.message = nn.Identity()
         self.reduce = reduce
         self.update = nn.Sequential(nn.Linear(hidden_dim, hidden_dim, bias), nn.Dropout(dropout))
 
-    # def _forward(self, G: Graph) -> Graph:
-    #     G_h = copy(G)
-    #     src, dest = G.edge_index.unbind(0)
-
-    #     H_uv = self.act(G.E)
-    #     M_uv = H_uv
-    #     M_v = scatter(M_uv, dest, dim=0, dim_size=G.num_nodes, reduce=self.reduce)
-    #     M_uv = M_v[src] - M_uv[G.rev_index]
-    #     H_uv = self.update(M_uv)
-    #     G_h.E = H_uv
-
-    #     return G_h # Graph(G.V, H_uv, G.edge_index, G.rev_index)
-
-    def forward(self, E, V, edge_index, rev_index) -> Graph:
+    def forward(
+        self,
+        edge_feats: Float[Tensor, "E d_h"],
+        node_feats: Float[Tensor, "V *"],
+        edge_index: Int[Tensor, "2 E"],
+        rev_index: Int[Tensor, "E"],
+    ) -> Float[Tensor, "E d_h"]:
         src, dest = edge_index.unbind(0)
 
-        H_uv = self.act(E)
-        M_uv = H_uv
-        M_v = scatter(M_uv, dest, dim=0, dim_size=len(V), reduce=self.reduce)
-        M_uv = M_v[src] - M_uv[rev_index]
-        H_uv = self.update(M_uv)
+        edge_hiddens = self.act(edge_feats)
+        messages = edge_hiddens
+        node_messages = scatter(messages, dest, dim=0, dim_size=len(node_feats), reduce=self.reduce)
+        edge_messages = node_messages[src] - messages[rev_index]
+        edge_hiddens = self.update(edge_messages)
 
-        return H_uv
+        return edge_hiddens
 
     def extra_repr(self):
         return f"(reduce): {self.reduce}"
@@ -77,16 +69,7 @@ class ChempropBlock(nn.Module):
 
         if residual:
             layers = [Residual(layer) for layer in layers]
-            # residual connection on edge features
-            # def add_edge_attrs(G1, G2):
-            #     G = copy(G1)
-            #     G.E = G1.E + G2.E
 
-            #     return G
-
-            # layers = [Residual(layer, add_edge_attrs) for layer in layers]
-
-        # self.block = nn.Sequential(*layers)
         self.layers = nn.ModuleList(layers)
         self.hidden_dim = hidden_dim
         self.reduce = reduce
@@ -95,21 +78,11 @@ class ChempropBlock(nn.Module):
     def depth(self) -> int:
         return len(self.layers)
 
-    # def _forward(self, G: Graph) -> Graph:
-    #     G_t = copy(G)
-    #     G_t.E = G.V[G.edge_index[0]] + G.E
-    #     G_t = self.block(G_t)
-    #     G_t.V = scatter(G_t.E, G_t.edge_index[0], dim=0, dim_size=G.num_nodes, reduce=self.reduce)
-
-    #     return G_t
-
-    def forward(self, G: Graph) -> Graph:
-        E = G.V[G.edge_index[0]] + G.E
+    def forward[T: (Graph | BatchedGraph)](self, G: T) -> T:
+        src, dest = G.edge_index.unbind(0)
+        edge_hiddens = G.node_feats[src] + G.edge_feats
         for layer in self.layers:
-            E = layer(E, G.V, G.edge_index, G.rev_index)
+            edge_hiddens = layer(edge_hiddens, G.node_feats, G.edge_index, G.rev_index)
+        node_hiddens = scatter(edge_hiddens, dest, dim=0, dim_size=G.num_nodes, reduce=self.reduce)
 
-        G_t = copy(G)
-        G_t.V = scatter(E, G.edge_index[0], dim=0, dim_size=G.num_nodes, reduce=self.reduce)
-        G_t.E = E
-
-        return G_t
+        return G.update(node_feats=node_hiddens, edge_feats=edge_hiddens)
