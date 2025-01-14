@@ -1,4 +1,3 @@
-from copy import copy
 from dataclasses import InitVar, dataclass, field
 import textwrap
 from typing import Iterable, Self
@@ -244,5 +243,5 @@ class BatchedGraph(Graph):
             f"node_feats: Tensor(shape={self.node_feats.shape})",
             f"edge_feats: Tensor(shape={self.edge_feats.shape})",
             f"device={self.__device}",
-            f"batch_size={len(self)}" "",
+            f"batch_size={len(self)}",
         ]
