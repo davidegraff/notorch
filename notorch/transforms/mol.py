@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from jaxtyping import Float
 from numpy.typing import NDArray
-from rdkit.Chem.rdFingerprintGenerator import FingeprintGenerator64, GetMorganGenerator
+from rdkit.Chem.rdFingerprintGenerator import FingerprintGenerator64, GetMorganGenerator
 import torch
 from torch import Tensor
 
@@ -20,7 +20,7 @@ class MolToFP(
     _in_key_: ClassVar[str] = "mol"
     _out_key_: ClassVar[str] = "fp"
 
-    fpgen: FingeprintGenerator64
+    fpgen: FingerprintGenerator64
     bit_fingerprint: InitVar[bool] = True
 
     def __post_init__(self, bit_fingerprint: bool = True):

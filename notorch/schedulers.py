@@ -1,14 +1,14 @@
 from typing import Callable
 
+from lightning.pytorch.utilities.types import LRSchedulerConfigType
+
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR, LRScheduler
 
-from notorch.types import LRSchedConfig
-
 
 def meta_lr_sched_factory(
-    scheduler: Callable[[Optimizer], LRScheduler], config: LRSchedConfig
-) -> Callable[[Optimizer], LRSchedConfig]:
+    scheduler: Callable[[Optimizer], LRScheduler], config: LRSchedulerConfigType
+) -> Callable[[Optimizer], LRSchedulerConfigType]:
     def fun(optim: Optimizer):
         return config | {"scheduler": scheduler(optim)}
 

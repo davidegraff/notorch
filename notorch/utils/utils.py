@@ -34,7 +34,7 @@ class EnumMapping(StrEnum):
 class UpdateMixin:
     def update(self, in_place: bool = False, **kwargs) -> Self:
         other = self if in_place else copy(self)
-        for key, val in kwargs:
+        for key, val in kwargs.items():
             setattr(other, key, val)
 
         return other
