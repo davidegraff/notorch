@@ -6,6 +6,35 @@ from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 
+__all__ = [
+    "SelfSupervisedLoss",
+    "MSE",
+    "BoundedMSE",
+    "MeanVarianceEstimation",
+    "MVE",
+    "Evidential",
+    "BinaryCrossEntropy",
+    "BCE",
+    "CrossEntropy",
+    "XENT",
+    "Dirichlet",
+]
+
+
+class SelfSupervisedLoss(nn.Module):
+    """A pass-through module to backpropagate self-supervised loss terms.
+
+    This class is mostly just syntactic sugar for :class:`torch.nn.Identity` that (1) does input
+    validation to ensure that the input is a scalar and (2) provide an idiomatic name when building
+    config files. There's not much reason to use this at the library level.
+    """
+
+    def forward(self, inputs: Float[Tensor, ""]) -> Float[Tensor, ""]:
+        if inputs.ndim != 0:
+            raise ValueError(f"input must be a scalar! received input with shape: {inputs.shape}")
+
+        return inputs
+
 
 class _LossFunctionBase(nn.Module):
     @abstractmethod
