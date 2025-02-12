@@ -1,3 +1,4 @@
+from jaxtyping import Float
 import torch
 from torch import Tensor
 import torch.nn as nn
@@ -55,12 +56,32 @@ class Cat(_OpBase):
         return torch.cat(tensors, dim=self.dim)
 
 
+class MultilinearInnerProduct(nn.Module):
+    r"""A generalization of the dot product to :math:`K` components [1]_:
+
+    .. math::
+        \mathrm{MIP}(\{\mathbf x_k\}_{k=1}^K) = \sum_{d=1}^D \prod_{k=1}^K x_{k,d}
+
+    In the case of :math:`K=2`, this reduces to the dot-product.
+
+    References
+    ----------
+    .. [1] https://arxiv.org/pdf/2411.01053
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    def forward(self, *tensors: Float[Tensor, "... d"]) -> Float[Tensor, "..."]:
+        return torch.stack(tensors, dim=0).prod(0).sum(-1)
+
+
 class Split(nn.Module):
     """Split the input tensor into chunks of :attr:`split_size` along :attr:`dim`.
 
-    See also
+    See Also
     --------
-    - :func:`torch.split`
+    :func:`torch.split`
     """
 
     def __init__(self, split_size: int = 1, dim: int = -1):
@@ -81,9 +102,9 @@ class MatMul(nn.Module):
     transpose : bool, default False
         whether to transpose the last two dimensions of :attr:`B`
 
-    See also
+    See Also
     --------
-    - :func:`torch.matmul`
+    :func:`torch.matmul`
     """
 
     def __init__(self, transpose: bool = False) -> None:
@@ -91,7 +112,9 @@ class MatMul(nn.Module):
 
         self.transpose = transpose
 
-    def forward(self, A: Tensor, B: Tensor) -> Tensor:
+    def forward(
+        self, A: Float[Tensor, "... n p"], B: Float[Tensor, "... p q"]
+    ) -> Float[Tensor, "... n q"]:
         if self.transpose:
             B = B.mT
 
@@ -102,7 +125,12 @@ class MatMul(nn.Module):
 
 
 class Einsum(nn.Module):
-    """Apply the specified Einstein summation operation to the input tensors."""
+    """Apply the specified Einstein summation operation to the input tensors.
+
+    See Also
+    --------
+    :func:`torch.einsum`
+    """
 
     def __init__(self, equation: str):
         super().__init__()
@@ -114,3 +142,7 @@ class Einsum(nn.Module):
 
     def extra_repr(self) -> str:
         return f"equation={repr(self.equation)}"
+
+
+Sum = Add
+MIP = MultilinearInnerProduct
