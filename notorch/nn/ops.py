@@ -11,7 +11,7 @@ class Add(nn.Module):
         return torch.stack(tensors, dim=0).sum(dim=0)
 
 
-class Prod(nn.Module):
+class Mul(nn.Module):
     """Multiply the input tensors element-wise."""
 
     def forward(self, *tensors: Float[Tensor, "... d"]) -> Float[Tensor, "... d"]:
@@ -117,6 +117,3 @@ class Einsum(nn.Module):
 
     def extra_repr(self) -> str:
         return f"equation={repr(self.equation)}"
-
-
-Sum = Add
