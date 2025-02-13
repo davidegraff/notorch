@@ -4,43 +4,21 @@ from torch import Tensor
 import torch.nn as nn
 
 
-class _OpBase(nn.Module):
-    def __init__(self, dim: int = 0):
-        super().__init__()
+class Add(nn.Module):
+    """Add the input tensors element-wise."""
 
-        self.dim = dim
-
-    def extra_repr(self):
-        return f"dim={self.dim}"
+    def forward(self, *tensors: Float[Tensor, "... d"]) -> Float[Tensor, "... d"]:
+        return torch.stack(tensors, dim=0).sum(dim=0)
 
 
-class Add(_OpBase):
-    """Add the input tensors along :attr:`dim`
+class Prod(nn.Module):
+    """Multiply the input tensors element-wise."""
 
-    Parameters
-    ----------
-    dim : int, default=-1
-        the dimension along which to sum
-    """
-
-    def forward(self, *tensors: Tensor) -> Tensor:
-        return torch.stack(tensors, dim=self.dim).sum(dim=self.dim)
+    def forward(self, *tensors: Float[Tensor, "... d"]) -> Float[Tensor, "... d"]:
+        return torch.stack(tensors, dim=0).prod(dim=0)
 
 
-class Prod(_OpBase):
-    """Multiply the input tensors along :attr:`dim`
-
-    Parameters
-    ----------
-    dim : int, default=-1
-        the dimension along which to multiply
-    """
-
-    def forward(self, *tensors: Tensor) -> Tensor:
-        return torch.stack(tensors, dim=self.dim).prod(dim=self.dim)
-
-
-class Cat(_OpBase):
+class Cat(nn.Module):
     """Concatenate the input tensors along :attr:`dim`.
 
     Parameters
@@ -50,34 +28,26 @@ class Cat(_OpBase):
     """
 
     def __init__(self, dim: int = -1):
-        super().__init__(dim)
+        super().__init__()
+
+        self.dim = dim
+
+    def extra_repr(self):
+        return f"dim={self.dim}"
 
     def forward(self, *tensors: Tensor) -> Tensor:
         return torch.cat(tensors, dim=self.dim)
 
 
-class MultilinearInnerProduct(nn.Module):
-    r"""A generalization of the dot product to :math:`K` components [1]_:
-
-    .. math::
-        \mathrm{MIP}(\{\mathbf x_k\}_{k=1}^K) = \sum_{d=1}^D \prod_{k=1}^K x_{k,d}
-
-    In the case of :math:`K=2`, this reduces to the dot-product.
-
-    References
-    ----------
-    .. [1] https://arxiv.org/pdf/2411.01053
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-    def forward(self, *tensors: Float[Tensor, "... d"]) -> Float[Tensor, "..."]:
-        return torch.stack(tensors, dim=0).prod(0).sum(-1)
-
-
 class Split(nn.Module):
     """Split the input tensor into chunks of :attr:`split_size` along :attr:`dim`.
+
+    Parameters
+    ----------
+    split_size : int, default=1
+        the size of a single chunk along the given dimension
+    dim : int, default=-1
+        the dimension along which to split
 
     See Also
     --------
@@ -99,7 +69,7 @@ class MatMul(nn.Module):
 
     Parameters
     ----------
-    transpose : bool, default False
+    transpose : bool, default=False
         whether to transpose the last two dimensions of :attr:`B`
 
     See Also
@@ -125,7 +95,12 @@ class MatMul(nn.Module):
 
 
 class Einsum(nn.Module):
-    """Apply the specified Einstein summation operation to the input tensors.
+    """Apply the given Einstein summation to the input tensors.
+
+    Parameters
+    ----------
+    equation : str
+        the Einstein summation to apply
 
     See Also
     --------
@@ -145,4 +120,3 @@ class Einsum(nn.Module):
 
 
 Sum = Add
-MIP = MultilinearInnerProduct
