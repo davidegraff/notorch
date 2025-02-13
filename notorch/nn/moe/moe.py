@@ -26,6 +26,7 @@ class MixtureOfExperts[T_mod: nn.Module](nn.Module):
     **kwargs
         keyword arguments to supply to :func:`~notorch.nn.moe.routers.router`
     """
+
     def __init__(
         self,
         module: T_mod,

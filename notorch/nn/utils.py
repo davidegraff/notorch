@@ -8,7 +8,6 @@ def cv(x: Tensor, dim: int = 0) -> Tensor:
     return x.std(dim) / x.mean(dim)
 
 
-
 def kth_excluding(A: Float[Tensor, "*b d"], k: int, *, beta: float = 1e6) -> Float[Tensor, "b d"]:
     r"""Calculate the :attr:`k`-th largest component of each row ``i`` when excluding column ``j``.
 
@@ -41,5 +40,6 @@ def kth_excluding(A: Float[Tensor, "*b d"], k: int, *, beta: float = 1e6) -> Flo
     B = A.unsqueeze(1) - beta * I
 
     return B.neg().kthvalue(k, dim=-1).values.neg()
+
 
 coefficient_of_variation = cv
