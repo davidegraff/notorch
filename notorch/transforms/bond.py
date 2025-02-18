@@ -5,7 +5,7 @@ import textwrap
 from typing import Protocol
 
 from jaxtyping import Int
-from rdkit.Chem.rdchem import BondStereo, BondType
+from rdkit.Chem.rdchem import Bond, BondStereo, BondType
 import torch
 from torch import Tensor
 import torch.nn.functional as F
@@ -13,7 +13,6 @@ import torch.nn.functional as F
 from notorch.conf import REPR_INDENT
 from notorch.transforms.conf import BOND_STEREOS, BOND_TYPES
 from notorch.transforms.utils.inverse_index import InverseIndexWithUnknown, build
-from notorch.types import Bond
 
 
 class BondTransform(Protocol):

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics.functional.classification as classification
 
-from notorch.nn.loss import _BoundedMixin, _LossFunctionBase
+from notorch.nn.loss.loss import _BoundedMixin, _LossFunctionBase
 
 
 class MAE(_LossFunctionBase):
