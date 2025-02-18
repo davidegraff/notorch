@@ -292,6 +292,7 @@ class Dirichlet(_LossFunctionBase):
         alphas = F.softplus(alphas) + 1
         targets = F.one_hot(targets, num_classes=2)
 
+
         S = alphas.sum(-1, keepdim=True)
         probs = alphas / S
         A = (targets - probs).square().sum(-1)
