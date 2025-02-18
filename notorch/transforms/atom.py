@@ -5,7 +5,7 @@ import textwrap
 from typing import Protocol
 
 from jaxtyping import Int
-from rdkit.Chem.rdchem import ChiralType, HybridizationType
+from rdkit.Chem.rdchem import Atom, ChiralType, HybridizationType
 import torch
 from torch import Tensor
 from torch.nn import functional as F
@@ -20,7 +20,6 @@ from notorch.transforms.conf import (
     NUM_HS,
 )
 from notorch.transforms.utils.inverse_index import InverseIndexWithUnknown, build
-from notorch.types import Atom
 
 
 class AtomTransform(Protocol):
